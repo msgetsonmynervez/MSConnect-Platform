@@ -1,35 +1,35 @@
-import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabase";
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/not-found";
+import Home from "@/pages/Home";
+import Train from "@/pages/Train";
+import Community from "@/pages/Community";
+import Progress from "@/pages/Progress";
 
-export default function App() {
-  const [status, setStatus] = useState<string>("Connecting...");
-
-  useEffect(() => {
-    async function testConnection() {
-      try {
-        const { data, error } = await supabase
-          .from("community_groups")
-          .select("slug, name")
-          .order("sort_order", { ascending: true });
-
-        if (error) {
-          setStatus(`Connection failed: ${error.message}`);
-        } else {
-          setStatus(`Connected! Found ${data?.length || 0} community groups.`);
-        }
-      } catch (err: any) {
-        setStatus(`Connection failed: ${err.message}`);
-      }
-    }
-
-    testConnection();
-  }, []);
-
+function Router() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="text-2xl font-bold text-primary">
-        {status}
-      </div>
-    </div>
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/train" component={Train} />
+      <Route path="/community" component={Community} />
+      <Route path="/progress" component={Progress} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
