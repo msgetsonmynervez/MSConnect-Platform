@@ -13,14 +13,12 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session) checkOnboarding(session.user.id)
       else setLoading(false)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session)
@@ -50,7 +48,7 @@ function App() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'var(--navy)',
+        background: '#1C2B3A',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -58,17 +56,17 @@ function App() {
         gap: '16px'
       }}>
         <div style={{
-          fontFamily: 'Fraunces, serif',
+          fontFamily: 'serif',
           fontSize: '32px',
-          color: 'var(--cream)',
+          color: '#FAF7F2',
           fontWeight: 600
         }}>
-          MS<span style={{ color: 'var(--sage-light)' }}>Connect</span>
+          MS<span style={{ color: '#8FAF9F' }}>Connect</span>
         </div>
         <div style={{
           width: '32px',
           height: '32px',
-          border: '3px solid var(--sage)',
+          border: '3px solid #5C7A6B',
           borderTopColor: 'transparent',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
@@ -81,7 +79,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
         <Route path="/signin" element={
           !session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
         } />
@@ -89,16 +86,12 @@ function App() {
           !session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
         } />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* Protected routes */}
         <Route path="/onboarding" element={
           session ? <Onboarding /> : <Navigate to="/signin" />
         } />
         <Route path="/home" element={
           session ? <Home /> : <Navigate to="/signin" />
         } />
-
-        {/* Default */}
         <Route path="*" element={
           <Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />
         } />
@@ -108,4 +101,3 @@ function App() {
 }
 
 export default App
-
