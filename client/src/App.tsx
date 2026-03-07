@@ -39,7 +39,6 @@ function App() {
       .select('onboarding_complete')
       .eq('auth_id', authId)
       .single()
-
     setOnboardingComplete(data?.onboarding_complete ?? false)
     setLoading(false)
   }
@@ -71,33 +70,4 @@ function App() {
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-      </div>
-    )
-  }
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/signin" element={
-          !session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
-        } />
-        <Route path="/signup" element={
-          !session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
-        } />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/onboarding" element={
-          session ? <Onboarding /> : <Navigate to="/signin" />
-        } />
-        <Route path="/home" element={
-          session ? <Home /> : <Navigate to="/signin" />
-        } />
-        <Route path="*" element={
-          <Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />
-        } />
-      </Routes>
-    </BrowserRouter>
-  )
-}
-
-export default App
+        <style>{​​​​​​​​​​​​​​​​
