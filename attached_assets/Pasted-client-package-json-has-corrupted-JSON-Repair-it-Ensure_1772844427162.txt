@@ -1,0 +1,57 @@
+client/package.json has corrupted JSON. Repair it. 
+Ensure react-router-dom@^6.28.0 in dependencies 
+once only. Validate JSON. Run cd client && npm 
+install. Then execute all steps below silently. 
+No questions. File names only as confirmation.
+
+Supabase ready at client/src/lib/supabase.ts 
+VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY set.
+
+1. client/src/index.css: Google Fonts Fraunces+DM 
+Sans. Variables: --navy:#1C2B3A --sage:#5C7A6B 
+--sage-light:#8FAF9F --sage-pale:#EDF3F0 
+--cream:#FAF7F2 --terracotta:#C4714A. DM Sans body 
+cream bg. FadeUp keyframe 0.4s opacity+translateY.
+
+2. client/src/App.tsx: BrowserRouter /signin 
+/signup /forgot-password /onboarding /home. 
+getSession on mount, none→SignIn, session→query 
+users.onboarding_complete where auth_id=user.id::
+text, false→/onboarding true→/home. 
+onAuthStateChange repeats. Navy spinner loading. 
+Unsubscribe unmount.
+
+3. client/src/pages/SignIn.tsx: Navy fullscreen 
+cream card 400px radius-24 pad-40 Fraunces 36px 
+logo MSConnect. Email+password inputs. Error div. 
+signInWithPassword on submit. Navy pill button. 
+Links /signup /forgot-password.
+
+4. client/src/pages/SignUp.tsx: Same layout. 
+Email+password+confirm. Validate required+match+ 
+8+chars. signUp on submit. Success→check-email 
+card link /signin.
+
+5. client/src/pages/ForgotPassword.tsx: Same 
+layout. Email input. resetPasswordForEmail 
+redirectTo origin+/signin. Success card. 
+Link /signin.
+
+6. client/src/pages/Onboarding.tsx: Same layout. 
+3-dot progress. Step1 display_name+username 
+@prefix lowercase alphanum underscore 3+chars. 
+Step2 ms_type buttons rrms/spms/ppms/cis/unknown 
+selected=navy. Step3 diagnosis_year select 
+year-40+empty option. Submit users.update 
+display_name+username+ms_type+diagnosis_year+ 
+onboarding_complete=true where auth_id=user.id:: 
+text. 23505→"Username taken". Success→/home.
+
+7. client/src/pages/Home.tsx: getUser→query users 
+display_name+username+ms_type where auth_id=user.
+id::text. Navy bg cream card logo. Welcome+ 
+display_name. Username+ms_type pill. signOut 
+button→supabase.auth.signOut.
+
+8. Verify preview shows SignIn no console errors. 
+Fix errors before stopping.

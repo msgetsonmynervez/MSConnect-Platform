@@ -1,35 +1,111 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import Train from "@/pages/Train";
-import Community from "@/pages/Community";
-import Progress from "@/pages/Progress";
-
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/train" component={Train} />
-      <Route path="/community" component={Community} />
-      <Route path="/progress" component={Progress} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { supabase } from './lib/supabase'
+import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
+import ForgotPassword from './pages/ForgotPassword'
+import Onboarding from './pages/Onboarding'
+import Home from './pages/Home'
 
 function App() {
+  const [session, setSession] = useState<any>(null)
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session) checkOnboarding(session.user.id)
+      else setLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+        if (session) checkOnboarding(session.user.id)
+        else {
+          setOnboardingComplete(null)
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function checkOnboarding(authId: string) {
+    const { data } = await supabase
+      .from('users')
+      .select('onboarding_complete')
+      .eq('auth_id', authId)
+      .single()
+
+    setOnboardingComplete(data?.onboarding_complete ?? false)
+    setLoading(false)
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'var(--navy)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <div style={{
+          fontFamily: 'Fraunces, serif',
+          fontSize: '32px',
+          color: 'var(--cream)',
+          fontWeight: 600
+        }}>
+          MS<span style={{ color: 'var(--sage-light)' }}>Connect</span>
+        </div>
+        <div style={{
+          width: '32px',
+          height: '32px',
+          border: '3px solid var(--sage)',
+          borderTopColor: 'transparent',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/signin" element={
+          !session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
+        } />
+        <Route path="/signup" element={
+          !session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />
+        } />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Protected routes */}
+        <Route path="/onboarding" element={
+          session ? <Onboarding /> : <Navigate to="/signin" />
+        } />
+        <Route path="/home" element={
+          session ? <Home /> : <Navigate to="/signin" />
+        } />
+
+        {/* Default */}
+        <Route path="*" element={
+          <Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />
+        } />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App
+
