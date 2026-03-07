@@ -57,6 +57,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />} />
         <Route path="/signin" element={!session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
         <Route path="/signup" element={!session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
