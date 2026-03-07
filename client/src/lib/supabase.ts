@@ -11,3 +11,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'msconnect-auth',
   }
 })
+
+export async function getCurrentUser() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('auth_id', session.user.id)
+    .maybeSingle()
+  return data
+}
