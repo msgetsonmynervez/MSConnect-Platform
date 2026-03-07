@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getCurrentUser, supabase } from '../lib/supabase'
 
 export default function Home() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     async function loadUser() {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) { setLoading(false); return }
-      const { data, error } = await supabase
-        .from('users')
-        .select('display_name, username, ms_type, current_streak_days')
-        .eq('auth_id', authUser.id)
-        .single()
-      if (error) console.error('Home loadUser error:', error)
-      setUser(data)
-      setLoading(false)
+      try {
+        const data = await getCurrentUser()
+        if (!data) {
+          setDebugInfo('No user data returned from getCurrentUser')
+        }
+        setUser(data)
+        setLoading(false)
+      } catch (e: any) {
+        setDebugInfo(`Exception: ${e.message}`)
+        setLoading(false)
+      }
     }
     loadUser()
   }, [])
@@ -24,6 +26,7 @@ export default function Home() {
   return (
     <div style={{minHeight:'100vh',background:'#1C2B3A',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}>
       <div style={{background:'#FAF7F2',borderRadius:'24px',padding:'40px 32px',width:'100%',maxWidth:'400px',textAlign:'center'}}>
+
         <div style={{fontFamily:'Georgia, serif',fontSize:'36px',fontWeight:600,color:'#1C2B3A',marginBottom:'8px'}}>
           MS<span style={{color:'#5C7A6B'}}>Connect</span>
         </div>
@@ -44,25 +47,25 @@ export default function Home() {
         )}
 
         {!loading && !user && (
-          <p style={{color:'#6B7280',fontSize:'14px',margin:'20px 0'}}>
-            Could not load profile.
-          </p>
+          <div style={{background:'#FEE2E2',borderRadius:'12px',padding:'16px',margin:'20px 0',textAlign:'left'}}>
+            <p style={{color:'#DC2626',fontSize:'13px',fontWeight:500,marginBottom:'8px'}}>Debug:</p>
+            <p style={{color:'#DC2626',fontSize:'11px',wordBreak:'break-all',lineHeight:1.6}}>{debugInfo}</p>
+          </div>
         )}
 
         <div style={{background:'#EDF3F0',borderRadius:'16px',padding:'20px',marginBottom:'24px'}}>
-          <p style={{fontSize:'14px',color:'#5C7A6B',fontWeight:500}}>
-            🎉 Auth flow complete!
-          </p>
+          <p style={{fontSize:'14px',color:'#5C7A6B',fontWeight:500}}>🎉 Auth flow complete!</p>
           <p style={{fontSize:'13px',color:'#6B7280',marginTop:'8px',lineHeight:1.5}}>
             Training, community, and progress screens coming next.
           </p>
         </div>
 
-        <button onClick={() => supabase.auth.signOut()} style={{
-          background:'transparent',color:'#6B7280',border:'1.5px solid #E0E0E0',
-          borderRadius:'50px',padding:'12px 24px',fontSize:'14px',cursor:'pointer'}}>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          style={{background:'transparent',color:'#6B7280',border:'1.5px solid #E0E0E0',borderRadius:'50px',padding:'12px 24px',fontSize:'14px',cursor:'pointer'}}>
           Sign Out
         </button>
+
       </div>
     </div>
   )
