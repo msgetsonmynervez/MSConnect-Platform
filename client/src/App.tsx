@@ -43,17 +43,18 @@ function App() {
     setLoading(false)
   }
 
-  if (loading) {
+    if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#1C2B3A',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
+      <div style={{minHeight:'100vh',background:'#1C2B3A',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'16px'}}>
+        <div style={{fontFamily:'serif',fontSize:'32px',color:'#FAF7F2',fontWeight:600}}>
+          MS<span style={{color:'#8FAF9F'}}>Connect</span>
+        </div>
+        <div style={{width:'32px',height:'32px',border:'3px solid #5C7A6B',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} />
+        <style dangerouslySetInnerHTML={{__html:'@keyframes spin{to{transform:rotate(360deg)}}'}} />
+      </div>
+    )
+  }
+>
         <div style={{
           fontFamily: 'serif',
           fontSize: '32px',
