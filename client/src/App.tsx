@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import { EnergyProvider } from './context/EnergyContext'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import ForgotPassword from './pages/ForgotPassword'
@@ -44,32 +45,36 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#1C2B3A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontFamily: 'serif', fontSize: '32px', color: '#FAF7F2', fontWeight: 600 }}>
-          MS<span style={{ color: '#8FAF9F' }}>Connect</span>
+      <EnergyProvider>
+        <div style={{ minHeight: '100vh', background: '#1C2B3A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ fontFamily: 'serif', fontSize: '32px', color: '#FAF7F2', fontWeight: 600 }}>
+            MS<span style={{ color: '#8FAF9F' }}>Connect</span>
+          </div>
+          <div style={{ width: '32px', height: '32px', border: '3px solid #5C7A6B', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <style dangerouslySetInnerHTML={{ __html: '@keyframes spin{to{transform:rotate(360deg)}}' }} />
         </div>
-        <div style={{ width: '32px', height: '32px', border: '3px solid #5C7A6B', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style dangerouslySetInnerHTML={{ __html: '@keyframes spin{to{transform:rotate(360deg)}}' }} />
-      </div>
+      </EnergyProvider>
     )
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />} />
-        <Route path="/signin" element={!session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
-        <Route path="/signup" element={!session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/onboarding" element={session ? <Onboarding /> : <Navigate to="/signin" />} />
-        <Route path="/home" element={session ? <Home /> : <Navigate to="/signin" />} />
-        <Route path="/checkin" element={session ? <DailyCheckIn /> : <Navigate to="/signin" />} />
-        <Route path="/train" element={session ? <Train /> : <Navigate to="/signin" />} />
-        <Route path="/community" element={session ? <Community /> : <Navigate to="/signin" />} />
-        <Route path="/progress" element={session ? <Progress /> : <Navigate to="/signin" />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <EnergyProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to={session ? (onboardingComplete ? '/home' : '/onboarding') : '/signin'} />} />
+          <Route path="/signin" element={!session ? <SignIn /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
+          <Route path="/signup" element={!session ? <SignUp /> : <Navigate to={onboardingComplete ? '/home' : '/onboarding'} />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/onboarding" element={session ? <Onboarding /> : <Navigate to="/signin" />} />
+          <Route path="/home" element={session ? <Home /> : <Navigate to="/signin" />} />
+          <Route path="/checkin" element={session ? <DailyCheckIn /> : <Navigate to="/signin" />} />
+          <Route path="/train" element={session ? <Train /> : <Navigate to="/signin" />} />
+          <Route path="/community" element={session ? <Community /> : <Navigate to="/signin" />} />
+          <Route path="/progress" element={session ? <Progress /> : <Navigate to="/signin" />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </EnergyProvider>
   )
 }
 
