@@ -75,3 +75,10 @@ input, button, textarea, select {
 .fade-in {
   animation: fadeIn 0.3s ease forwards;
 }
+[data-theme='dark'] body {
+  background: #1a1410;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
