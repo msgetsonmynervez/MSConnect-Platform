@@ -21,6 +21,30 @@
   --radius: 18px;
   --radius-sm: 10px;
 }
+[data-theme='dark'] {
+  --navy: #0f1a24;
+  --navy-mid: #1a2d3d;
+  --sage: #5C7A6B;
+  --sage-light: #7a9e8e;
+  --sage-pale: #1e2e28;
+  --cream: #1a1410;
+  --warm: #2a1f14;
+  --terracotta: #C4714A;
+  --text: #f5f0e8;
+  --text-soft: #a89880;
+  --white: #241e18;
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+}
+
+:root {
+  font-size: calc(16px * var(--font-scale, 1));
+}
 
 body {
   font-family: 'DM Sans', sans-serif;
