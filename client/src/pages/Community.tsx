@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
+import AppHeader from '../components/AppHeader'
+import FogView from '../components/FogView'
+import { useEnergy } from '../context/EnergyContext'
 
 interface Post {
   id: string
@@ -32,6 +35,7 @@ function timeAgo(dateStr: string): string {
 
 export default function Community() {
   const navigate = useNavigate()
+  const { fogMode } = useEnergy()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [hugging, setHugging] = useState<string | null>(null)
@@ -40,25 +44,18 @@ export default function Community() {
     async function load() {
       const user = await getCurrentUser()
       if (!user) { navigate('/signin'); return }
-
       const { data } = await supabase
         .from('posts')
-        .select(`
-          id, body, post_type, hug_count, reply_count, created_at,
+        .select(`id, body, post_type, hug_count, reply_count, created_at,
           users!author_id (display_name),
-          community_groups!group_id (name)
-        `)
+          community_groups!group_id (name)`)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(20)
-
       if (data) {
         setPosts(data.map((p: any) => ({
-          id: p.id,
-          body: p.body,
-          post_type: p.post_type,
-          hug_count: p.hug_count,
-          reply_count: p.reply_count,
+          id: p.id, body: p.body, post_type: p.post_type,
+          hug_count: p.hug_count, reply_count: p.reply_count,
           created_at: p.created_at,
           display_name: p.users?.display_name ?? 'Anonymous',
           group_name: p.community_groups?.name ?? '',
@@ -76,33 +73,33 @@ export default function Community() {
     setHugging(null)
   }
 
+  if (fogMode) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#1C2B3A' }}>
+        <FogView
+          title="Community"
+          primaryLabel="Read latest post 💬"
+          onPrimary={() => {}}
+        />
+        <BottomNav />
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
-      <div style={{ padding: '48px 20px 24px' }}>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
-          Community
-        </div>
-        <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
-          You are not alone in this
-        </div>
-      </div>
-
+      <AppHeader title="Community" subtitle="You are not alone in this" />
       {loading && (
         <div style={{ textAlign: 'center', color: '#8FAF9F', padding: '40px' }}>Loading posts...</div>
       )}
-
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {posts.map(post => {
           const typeStyle = POST_TYPE_STYLES[post.post_type] ?? POST_TYPE_STYLES.standard
           return (
-            <div key={post.id} style={{
-              background: '#FAF7F2', borderRadius: '20px', padding: '20px',
-            }}>
+            <div key={post.id} style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A' }}>
-                    {post.display_name}
-                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A' }}>{post.display_name}</div>
                   <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
                     {post.group_name} · {timeAgo(post.created_at)}
                   </div>
@@ -114,11 +111,7 @@ export default function Community() {
                   {typeStyle.label}
                 </div>
               </div>
-
-              <p style={{ fontSize: '14px', color: '#2C2C2C', lineHeight: 1.6, marginBottom: '16px' }}>
-                {post.body}
-              </p>
-
+              <p style={{ fontSize: '14px', color: '#2C2C2C', lineHeight: 1.6, marginBottom: '16px' }}>{post.body}</p>
               <div style={{ display: 'flex', gap: '16px' }}>
                 <button onClick={() => handleHug(post.id, post.hug_count)} style={{
                   background: '#EDF3F0', border: 'none', borderRadius: '20px',
@@ -128,9 +121,8 @@ export default function Community() {
                   🤗 {post.hug_count}
                 </button>
                 <div style={{
-                  background: '#F5F5F5', borderRadius: '20px',
-                  padding: '8px 14px', fontSize: '13px', color: '#6B7280',
-                  display: 'flex', alignItems: 'center', gap: '6px'
+                  background: '#F5F5F5', borderRadius: '20px', padding: '8px 14px',
+                  fontSize: '13px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px'
                 }}>
                   💬 {post.reply_count}
                 </div>
@@ -139,7 +131,6 @@ export default function Community() {
           )
         })}
       </div>
-
       <BottomNav />
     </div>
   )
