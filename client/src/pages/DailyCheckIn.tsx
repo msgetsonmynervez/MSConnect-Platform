@@ -106,7 +106,6 @@ export default function DailyCheckIn() {
 
       const today = new Date().toISOString().split('T')[0]
 
-      // Check if already submitted today
       const { data: existing } = await supabase
         .from('daily_checkins')
         .select('*')
@@ -126,7 +125,6 @@ export default function DailyCheckIn() {
         return
       }
 
-      // Smart defaults — fetch yesterday
       const yesterday = new Date()
       yesterday.setDate(yesterday.getDate() - 1)
       const yesterdayStr = yesterday.toISOString().split('T')[0]
@@ -191,6 +189,8 @@ export default function DailyCheckIn() {
       return
     }
 
+    await supabase.rpc('check_symptom_pattern', { p_user_id: userId })
+
     navigate('/home')
   }
 
@@ -225,7 +225,6 @@ export default function DailyCheckIn() {
           </div>
         )}
 
-        {/* Step 0 — Energy & Mood */}
         {step === 0 && (
           <div>
             <SliderField
@@ -246,7 +245,6 @@ export default function DailyCheckIn() {
           </div>
         )}
 
-        {/* Step 1 — Symptoms */}
         {step === 1 && (
           <div>
             <p style={{ fontSize: '14px', color: '#1C2B3A', fontWeight: 500, marginBottom: '16px' }}>
@@ -273,7 +271,6 @@ export default function DailyCheckIn() {
           </div>
         )}
 
-        {/* Step 2 — Day tag + notes + submit */}
         {step === 2 && (
           <div>
             <p style={{ fontSize: '14px', color: '#1C2B3A', fontWeight: 500, marginBottom: '16px' }}>
