@@ -1,104 +1,176 @@
-import { AppShell } from "@/components/AppShell";
-import { useProgress } from "@/hooks/use-app-data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { Trophy, Target, Zap, TrendingUp } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getCurrentUser, supabase } from '../lib/supabase'
+import BottomNav from '../components/BottomNav'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-export default function Progress() {
-  const { data: progressData, isLoading } = useProgress();
-
-  return (
-    <AppShell>
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        <header className="space-y-2">
-          <h1 className="text-4xl font-bold text-primary">Your Progress</h1>
-          <p className="text-muted-foreground text-lg">Track your consistency and cognitive improvements.</p>
-        </header>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Current Streak", value: "5 Days", icon: Zap, color: "text-orange-500", bg: "bg-orange-100 dark:bg-orange-900/20" },
-            { label: "Longest Streak", value: "12 Days", icon: Trophy, color: "text-yellow-500", bg: "bg-yellow-100 dark:bg-yellow-900/20" },
-            { label: "Sessions", value: "34", icon: Target, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-900/20" },
-            { label: "Avg Score", value: "78%", icon: TrendingUp, color: "text-secondary", bg: "bg-secondary/10" },
-          ].map((stat, i) => (
-            <Card key={i} className="border-none shadow-sm hover-elevate">
-              <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center">
-                <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-3`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground">{stat.value}</h3>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Chart Section */}
-        <Card className="border border-border rounded-3xl overflow-hidden shadow-sm">
-          <CardHeader className="bg-muted/30 border-b border-border/50 pb-4">
-            <CardTitle className="text-xl font-display flex items-center gap-2">
-              <ActivityIcon /> Cognitive Performance (7 Days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            {isLoading ? (
-              <Skeleton className="w-full h-[300px] rounded-xl" />
-            ) : (
-              <div className="h-[300px] w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={progressData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--secondary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--secondary))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                      dy={10}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="hsl(var(--secondary))" 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorScore)" 
-                      activeDot={{ r: 6, fill: 'hsl(var(--secondary))', stroke: '#fff', strokeWidth: 2 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </AppShell>
-  );
+interface CheckIn {
+  checkin_date: string
+  energy_level: number
+  mood_score: number
+  day_tag: string | null
 }
 
-// Simple activity icon for the chart title
-function ActivityIcon() {
+export default function Progress() {
+  const navigate = useNavigate()
+  const [checkins, setCheckins] = useState<CheckIn[]>([])
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser()
+      if (!user) { navigate('/signin'); return }
+      setUserId(user.id)
+
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const fromDate = thirtyDaysAgo.toISOString().split('T')[0]
+
+      const { data } = await supabase
+        .from('daily_checkins')
+        .select('checkin_date, energy_level, mood_score, day_tag')
+        .eq('user_id', user.id)
+        .gte('checkin_date', fromDate)
+        .order('checkin_date', { ascending: true })
+
+      setCheckins(data ?? [])
+      setLoading(false)
+    }
+    load()
+  }, [navigate])
+
+  const chartData = checkins.map(c => ({
+    date: new Date(c.checkin_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    Energy: c.energy_level,
+    Mood: c.mood_score,
+  }))
+
+  const avgEnergy = checkins.length
+    ? (checkins.reduce((sum, c) => sum + c.energy_level, 0) / checkins.length).toFixed(1)
+    : '—'
+
+  const avgMood = checkins.length
+    ? (checkins.reduce((sum, c) => sum + c.mood_score, 0) / checkins.length).toFixed(1)
+    : '—'
+
+  const goodDays = checkins.filter(c => c.day_tag === 'good').length
+  const hardDays = checkins.filter(c => c.day_tag === 'hard').length
+
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-secondary">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-    </svg>
-  );
+    <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
+      <div style={{ padding: '48px 20px 24px' }}>
+        <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
+          Progress
+        </div>
+        <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
+          Your last 30 days
+        </div>
+      </div>
+
+      {loading && (
+        <div style={{ textAlign: 'center', color: '#8FAF9F', padding: '40px' }}>Loading...</div>
+      )}
+
+      {!loading && (
+        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Stats row */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {[
+              { label: 'Avg Energy', value: avgEnergy, emoji: '⚡' },
+              { label: 'Avg Mood', value: avgMood, emoji: '😊' },
+              { label: 'Good Days', value: goodDays, emoji: '🌿' },
+              { label: 'Hard Days', value: hardDays, emoji: '💙' },
+            ].map(stat => (
+              <div key={stat.label} style={{
+                flex: 1, background: '#FAF7F2', borderRadius: '16px',
+                padding: '14px 8px', textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '18px', marginBottom: '4px' }}>{stat.emoji}</div>
+                <div style={{ fontSize: '20px', fontWeight: 700, color: '#1C2B3A' }}>{stat.value}</div>
+                <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px', lineHeight: 1.3 }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart */}
+          <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>
+              Energy & Mood — 30 Days
+            </div>
+            {checkins.length < 2 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
+                <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.6 }}>
+                  Check in daily to see your trends appear here.
+                </p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6B7280' }} />
+                  <YAxis domain={[1, 5]} tick={{ fontSize: 10, fill: '#6B7280' }} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="Energy" stroke="#FFB000" strokeWidth={2} dot={{ r: 4 }} strokeDasharray="6 3" />
+                  <Line type="monotone" dataKey="Mood" stroke="#648FFF" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Check-in history */}
+          <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>
+              Recent Check-ins
+            </div>
+            {checkins.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', padding: '16px 0' }}>
+                No check-ins yet. Start your first one today.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[...checkins].reverse().slice(0, 7).map(c => (
+                  <div key={c.checkin_date} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', padding: '10px 0',
+                    borderBottom: '1px solid #F0EDE8'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#1C2B3A' }}>
+                        {new Date(c.checkin_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </div>
+                      {c.day_tag && (
+                        <div style={{
+                          fontSize: '11px', marginTop: '2px',
+                          color: c.day_tag === 'good' ? '#5C7A6B' : '#3b82f6'
+                        }}>
+                          {c.day_tag === 'good' ? '🌿 Good Day' : '💙 Hard Day'}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: '#1C2B3A' }}>{c.energy_level}</div>
+                        <div style={{ fontSize: '10px', color: '#6B7280' }}>Energy</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: '#1C2B3A' }}>{c.mood_score}</div>
+                        <div style={{ fontSize: '10px', color: '#6B7280' }}>Mood</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      <BottomNav />
+    </div>
+  )
 }
