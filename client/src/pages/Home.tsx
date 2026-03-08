@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
+import AppHeader from '../components/AppHeader'
+import FogView from '../components/FogView'
+import { useEnergy } from '../context/EnergyContext'
 
 interface StreakData {
   current_streak_days: number
@@ -18,6 +21,7 @@ interface AlertState {
 
 export default function Home() {
   const navigate = useNavigate()
+  const { fogMode } = useEnergy()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [checkedInToday, setCheckedInToday] = useState(false)
@@ -65,12 +69,7 @@ export default function Home() {
     const today = new Date().toISOString().split('T')[0]
     await supabase
       .from('users')
-      .update({
-        alert_state: {
-          ...alertState,
-          dismissed_at: today
-        }
-      })
+      .update({ alert_state: { ...alertState, dismissed_at: today } })
       .eq('id', user.id)
     setAlertState(a => ({ ...a, dismissed_at: today }))
     setDismissingAlert(false)
@@ -79,18 +78,25 @@ export default function Home() {
   const showSymptomAlert = alertState.symptom_alert && !alertState.dismissed_at
   const streakPaused = streak?.paused_since != null
 
+  if (fogMode) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#1C2B3A' }}>
+        <FogView
+          title={checkedInToday ? "You've checked in today" : "Time to check in"}
+          primaryLabel={checkedInToday ? "Go to Training 🧠" : "Start Check-in →"}
+          onPrimary={() => navigate(checkedInToday ? '/train' : '/checkin')}
+        />
+        <BottomNav />
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
-      <div style={{ padding: '48px 20px 24px' }}>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
-          MS<span style={{ color: '#8FAF9F' }}>Connect</span>
-        </div>
-        {user && (
-          <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
-            Welcome back, {user.display_name} 🌿
-          </div>
-        )}
-      </div>
+      <AppHeader
+        title={`MS${'\u200B'}Connect`}
+        subtitle={user ? `Welcome back, ${user.display_name} 🌿` : ''}
+      />
 
       {loading && (
         <div style={{ textAlign: 'center', color: '#8FAF9F', padding: '40px' }}>Loading...</div>
@@ -99,7 +105,6 @@ export default function Home() {
       {!loading && (
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Symptom alert card #87 */}
           {showSymptomAlert && (
             <div style={{
               background: '#FEF3C7', borderRadius: '20px', padding: '20px',
@@ -111,20 +116,16 @@ export default function Home() {
               <p style={{ fontSize: '13px', color: '#92400E', lineHeight: 1.6, marginBottom: '14px' }}>
                 You've logged several difficult symptoms over the past few days. Consider reaching out to your care team if things feel unmanageable.
               </p>
-              <button
-                onClick={dismissAlert}
-                disabled={dismissingAlert}
-                style={{
-                  background: 'transparent', border: '1.5px solid #F59E0B',
-                  borderRadius: '50px', padding: '8px 20px', fontSize: '13px',
-                  color: '#92400E', cursor: 'pointer', fontWeight: 500
-                }}>
+              <button onClick={dismissAlert} disabled={dismissingAlert} style={{
+                background: 'transparent', border: '1.5px solid #F59E0B',
+                borderRadius: '50px', padding: '8px 20px', fontSize: '13px',
+                color: '#92400E', cursor: 'pointer', fontWeight: 500
+              }}>
                 Thanks, got it
               </button>
             </div>
           )}
 
-          {/* Streak card #56 */}
           {streak !== null && (
             <div style={{
               background: streakPaused ? '#EFF6FF' : '#FAF7F2',
@@ -159,7 +160,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Check-in card */}
           <div style={{
             background: checkedInToday ? '#EDF3F0' : '#FAF7F2',
             borderRadius: '20px', padding: '24px'
@@ -167,18 +167,12 @@ export default function Home() {
             {checkedInToday ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C7A6B' }}>
-                  Check-in complete
-                </div>
-                <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px' }}>
-                  Great job checking in today
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: '#5C7A6B' }}>Check-in complete</div>
+                <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px' }}>Great job checking in today</div>
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: '#1C2B3A', marginBottom: '4px' }}>
-                  Daily Check-in
-                </div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: '#1C2B3A', marginBottom: '4px' }}>Daily Check-in</div>
                 <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '16px', lineHeight: 1.5 }}>
                   How are you feeling today? Takes 2 minutes.
                 </div>
@@ -193,7 +187,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Quick actions */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button onClick={() => navigate('/train')} style={{
               flex: 1, background: '#FAF7F2', borderRadius: '20px', padding: '20px',
@@ -213,19 +206,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Profile strip */}
           {user && (
             <div style={{
               background: '#FAF7F2', borderRadius: '20px', padding: '16px 20px',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center'
             }}>
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: '#1C2B3A' }}>
-                  @{user.username}
-                </div>
-                <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                  {user.ms_type?.toUpperCase()}
-                </div>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: '#1C2B3A' }}>@{user.username}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>{user.ms_type?.toUpperCase()}</div>
               </div>
               <button onClick={() => supabase.auth.signOut()} style={{
                 background: 'transparent', color: '#6B7280',
@@ -239,7 +227,6 @@ export default function Home() {
 
         </div>
       )}
-
       <BottomNav />
     </div>
   )
