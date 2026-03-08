@@ -65,6 +65,8 @@ function App() {
         <Route path="/onboarding" element={session ? <Onboarding /> : <Navigate to="/signin" />} />
         <Route path="/home" element={session ? <Home /> : <Navigate to="/signin" />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/checkin" element={session ? <DailyCheckIn /> : <Navigate to="/signin" />} />
+
       </Routes>
     </BrowserRouter>
   )
