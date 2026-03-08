@@ -3,35 +3,81 @@ import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
 
+interface StreakData {
+  current_streak_days: number
+  longest_streak_days: number
+  paused_since: string | null
+  pause_reason: string | null
+}
+
+interface AlertState {
+  symptom_alert?: boolean
+  alert_set_at?: string
+  dismissed_at?: string | null
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [checkedInToday, setCheckedInToday] = useState(false)
+  const [streak, setStreak] = useState<StreakData | null>(null)
+  const [alertState, setAlertState] = useState<AlertState>({})
+  const [dismissingAlert, setDismissingAlert] = useState(false)
 
   useEffect(() => {
-    async function loadUser() {
+    async function loadHome() {
       try {
         const data = await getCurrentUser()
         if (!data) { navigate('/signin'); return }
         setUser(data)
+        setAlertState(data.alert_state ?? {})
 
         const today = new Date().toISOString().split('T')[0]
-        const { data: checkin } = await supabase
-          .from('daily_checkins')
-          .select('id')
-          .eq('user_id', data.id)
-          .eq('checkin_date', today)
-          .maybeSingle()
 
-        setCheckedInToday(!!checkin)
+        const [checkinResult, streakResult] = await Promise.all([
+          supabase
+            .from('daily_checkins')
+            .select('id')
+            .eq('user_id', data.id)
+            .eq('checkin_date', today)
+            .maybeSingle(),
+          supabase
+            .from('training_streaks')
+            .select('current_streak_days, longest_streak_days, paused_since, pause_reason')
+            .eq('user_id', data.id)
+            .maybeSingle()
+        ])
+
+        setCheckedInToday(!!checkinResult.data)
+        setStreak(streakResult.data ?? null)
         setLoading(false)
       } catch (e: any) {
         setLoading(false)
       }
     }
-    loadUser()
+    loadHome()
   }, [navigate])
+
+  async function dismissAlert() {
+    if (!user) return
+    setDismissingAlert(true)
+    const today = new Date().toISOString().split('T')[0]
+    await supabase
+      .from('users')
+      .update({
+        alert_state: {
+          ...alertState,
+          dismissed_at: today
+        }
+      })
+      .eq('id', user.id)
+    setAlertState(a => ({ ...a, dismissed_at: today }))
+    setDismissingAlert(false)
+  }
+
+  const showSymptomAlert = alertState.symptom_alert && !alertState.dismissed_at
+  const streakPaused = streak?.paused_since != null
 
   return (
     <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
@@ -52,6 +98,66 @@ export default function Home() {
 
       {!loading && (
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+          {/* Symptom alert card #87 */}
+          {showSymptomAlert && (
+            <div style={{
+              background: '#FEF3C7', borderRadius: '20px', padding: '20px',
+              border: '1.5px solid #F59E0B'
+            }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: '#92400E', marginBottom: '6px' }}>
+                🌡️ Symptom pattern noticed
+              </div>
+              <p style={{ fontSize: '13px', color: '#92400E', lineHeight: 1.6, marginBottom: '14px' }}>
+                You've logged several difficult symptoms over the past few days. Consider reaching out to your care team if things feel unmanageable.
+              </p>
+              <button
+                onClick={dismissAlert}
+                disabled={dismissingAlert}
+                style={{
+                  background: 'transparent', border: '1.5px solid #F59E0B',
+                  borderRadius: '50px', padding: '8px 20px', fontSize: '13px',
+                  color: '#92400E', cursor: 'pointer', fontWeight: 500
+                }}>
+                Thanks, got it
+              </button>
+            </div>
+          )}
+
+          {/* Streak card #56 */}
+          {streak !== null && (
+            <div style={{
+              background: streakPaused ? '#EFF6FF' : '#FAF7F2',
+              borderRadius: '20px', padding: '20px',
+              border: streakPaused ? '1.5px solid #93C5FD' : 'none'
+            }}>
+              {streakPaused ? (
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#1D4ED8', marginBottom: '6px' }}>
+                    💙 Rest Mode
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#1D4ED8', lineHeight: 1.6 }}>
+                    Your streak is paused while you rest. It will resume automatically when you're feeling better. Your progress is safe.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>Training Streak</div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: '#1C2B3A' }}>
+                      {streak.current_streak_days} <span style={{ fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>days</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>Personal Best</div>
+                    <div style={{ fontSize: '20px', fontWeight: 600, color: '#5C7A6B' }}>
+                      {streak.longest_streak_days} <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>days</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Check-in card */}
           <div style={{
