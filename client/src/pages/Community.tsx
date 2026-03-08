@@ -1,132 +1,146 @@
-import { useState } from "react";
-import { AppShell } from "@/components/AppShell";
-import { usePosts, useToggleLike, useCreatePost } from "@/hooks/use-app-data";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Heart, MessageCircle, Send, Sparkles } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getCurrentUser, supabase } from '../lib/supabase'
+import BottomNav from '../components/BottomNav'
+
+interface Post {
+  id: string
+  body: string
+  post_type: string
+  hug_count: number
+  reply_count: number
+  created_at: string
+  display_name: string
+  group_name: string
+}
+
+const POST_TYPE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  win: { bg: '#EDF3F0', color: '#5C7A6B', label: '🎉 Win' },
+  infusion_day: { bg: '#EFF6FF', color: '#3b82f6', label: '💉 Infusion Day' },
+  standard: { bg: '#F5F3FF', color: '#7C3AED', label: '💬 Post' },
+  question: { bg: '#FFF7ED', color: '#C4714A', label: '❓ Question' },
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (hours < 1) return 'just now'
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
 
 export default function Community() {
-  const [newPost, setNewPost] = useState("");
-  const { data: posts, isLoading } = usePosts();
-  const toggleLike = useToggleLike();
-  const createPost = useCreatePost();
+  const navigate = useNavigate()
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hugging, setHugging] = useState<string | null>(null)
 
-  const handlePostSubmit = () => {
-    if (!newPost.trim()) return;
-    createPost.mutate(newPost, {
-      onSuccess: () => setNewPost("")
-    });
-  };
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser()
+      if (!user) { navigate('/signin'); return }
+
+      const { data } = await supabase
+        .from('posts')
+        .select(`
+          id, body, post_type, hug_count, reply_count, created_at,
+          users!author_id (display_name),
+          community_groups!group_id (name)
+        `)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (data) {
+        setPosts(data.map((p: any) => ({
+          id: p.id,
+          body: p.body,
+          post_type: p.post_type,
+          hug_count: p.hug_count,
+          reply_count: p.reply_count,
+          created_at: p.created_at,
+          display_name: p.users?.display_name ?? 'Anonymous',
+          group_name: p.community_groups?.name ?? '',
+        })))
+      }
+      setLoading(false)
+    }
+    load()
+  }, [navigate])
+
+  async function handleHug(postId: string, currentCount: number) {
+    setHugging(postId)
+    setPosts(ps => ps.map(p => p.id === postId ? { ...p, hug_count: p.hug_count + 1 } : p))
+    await supabase.from('posts').update({ hug_count: currentCount + 1 }).eq('id', postId)
+    setHugging(null)
+  }
 
   return (
-    <AppShell>
-      <div className="max-w-2xl mx-auto space-y-8">
-        
-        <header className="space-y-2 text-center md:text-left">
-          <h1 className="text-4xl font-bold text-primary">Community</h1>
-          <p className="text-muted-foreground text-lg">Connect, share, and support each other.</p>
-        </header>
+    <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
+      <div style={{ padding: '48px 20px 24px' }}>
+        <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
+          Community
+        </div>
+        <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
+          You are not alone in this
+        </div>
+      </div>
 
-        {/* Create Post Card */}
-        <div className="bg-card rounded-3xl p-4 sm:p-6 shadow-sm border border-border">
-          <div className="flex gap-4">
-            <Avatar className="w-10 h-10 border-2 border-background shadow-sm">
-              <AvatarFallback className="bg-secondary text-white">YO</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-3">
-              <Textarea 
-                placeholder="Share your journey, ask a question, or celebrate a win..."
-                className="resize-none border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-secondary min-h-[100px] rounded-2xl text-base p-4"
-                value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-              />
-              <div className="flex justify-between items-center">
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-secondary" />
-                  Be supportive
+      {loading && (
+        <div style={{ textAlign: 'center', color: '#8FAF9F', padding: '40px' }}>Loading posts...</div>
+      )}
+
+      <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {posts.map(post => {
+          const typeStyle = POST_TYPE_STYLES[post.post_type] ?? POST_TYPE_STYLES.standard
+          return (
+            <div key={post.id} style={{
+              background: '#FAF7F2', borderRadius: '20px', padding: '20px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A' }}>
+                    {post.display_name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                    {post.group_name} · {timeAgo(post.created_at)}
+                  </div>
                 </div>
-                <Button 
-                  onClick={handlePostSubmit}
-                  disabled={!newPost.trim() || createPost.isPending}
-                  className="bg-secondary hover:bg-secondary/90 text-white rounded-full px-6 shadow-md shadow-secondary/20"
-                >
-                  {createPost.isPending ? "Posting..." : (
-                    <>
-                      Post <Send className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                <div style={{
+                  background: typeStyle.bg, color: typeStyle.color,
+                  borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 500
+                }}>
+                  {typeStyle.label}
+                </div>
+              </div>
+
+              <p style={{ fontSize: '14px', color: '#2C2C2C', lineHeight: 1.6, marginBottom: '16px' }}>
+                {post.body}
+              </p>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <button onClick={() => handleHug(post.id, post.hug_count)} style={{
+                  background: '#EDF3F0', border: 'none', borderRadius: '20px',
+                  padding: '8px 14px', fontSize: '13px', color: '#5C7A6B',
+                  cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
+                  🤗 {post.hug_count}
+                </button>
+                <div style={{
+                  background: '#F5F5F5', borderRadius: '20px',
+                  padding: '8px 14px', fontSize: '13px', color: '#6B7280',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
+                  💬 {post.reply_count}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Feed */}
-        <div className="space-y-4">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-card p-6 rounded-3xl border border-border space-y-4">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-10 h-10 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </div>
-                <Skeleton className="h-16 w-full" />
-              </div>
-            ))
-          ) : (
-            posts?.map((post) => (
-              <div key={post.id} className="bg-card p-5 sm:p-6 rounded-3xl border border-border shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-border/50">
-                    <AvatarFallback className="bg-primary/5 text-primary font-semibold text-sm sm:text-base">
-                      {post.authorInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <h3 className="font-bold text-foreground text-sm sm:text-base truncate pr-2">{post.authorName}</h3>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                      </span>
-                    </div>
-                    
-                    <p className="text-foreground/90 text-sm sm:text-base leading-relaxed mb-4 text-balance">
-                      {post.content}
-                    </p>
-                    
-                    <div className="flex items-center gap-6">
-                      <button 
-                        onClick={() => toggleLike.mutate(post.id)}
-                        className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                          post.isLikedByMe 
-                            ? "text-secondary" 
-                            : "text-muted-foreground hover:text-secondary"
-                        }`}
-                      >
-                        <Heart className={`w-5 h-5 ${post.isLikedByMe ? "fill-secondary" : ""}`} />
-                        <span>{post.likes}</span>
-                      </button>
-                      
-                      <button className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                        <MessageCircle className="w-5 h-5" />
-                        <span>{post.comments}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        
+          )
+        })}
       </div>
-    </AppShell>
-  );
+
+      <BottomNav />
+    </div>
+  )
 }
