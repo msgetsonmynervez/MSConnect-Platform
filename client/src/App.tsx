@@ -6,6 +6,7 @@ import SignUp from './pages/SignUp'
 import ForgotPassword from './pages/ForgotPassword'
 import Onboarding from './pages/Onboarding'
 import Home from './pages/Home'
+import DailyCheckIn from './pages/DailyCheckIn'
 import NotFound from './pages/not-found'
 
 function App() {
