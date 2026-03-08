@@ -3,42 +3,163 @@ import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 
 interface CheckIn {
   checkin_date: string
   energy_level: number
   mood_score: number
   day_tag: string | null
+  symptom_flags: string[]
+}
+
+interface TrainingSession {
+  started_at: string
+  score_normalized: number
+  duration_seconds: number
+  status: string
 }
 
 export default function Progress() {
   const navigate = useNavigate()
   const [checkins, setCheckins] = useState<CheckIn[]>([])
+  const [sessions, setSessions] = useState<TrainingSession[]>([])
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser()
       if (!user) { navigate('/signin'); return }
-      setUserId(user.id)
+      setUserProfile(user)
 
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       const fromDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-      const { data } = await supabase
-        .from('daily_checkins')
-        .select('checkin_date, energy_level, mood_score, day_tag')
-        .eq('user_id', user.id)
-        .gte('checkin_date', fromDate)
-        .order('checkin_date', { ascending: true })
+      const [checkinResult, sessionResult] = await Promise.all([
+        supabase
+          .from('daily_checkins')
+          .select('checkin_date, energy_level, mood_score, day_tag, symptom_flags')
+          .eq('user_id', user.id)
+          .gte('checkin_date', fromDate)
+          .order('checkin_date', { ascending: true }),
+        supabase
+          .from('training_sessions')
+          .select('started_at, score_normalized, duration_seconds, status')
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .gte('started_at', thirtyDaysAgo.toISOString())
+          .order('started_at', { ascending: false })
+      ])
 
-      setCheckins(data ?? [])
+      setCheckins(checkinResult.data ?? [])
+      setSessions(sessionResult.data ?? [])
       setLoading(false)
     }
     load()
   }, [navigate])
+
+  async function generateReport() {
+    if (!userProfile) return
+    setExporting(true)
+
+    try {
+      const doc = new jsPDF()
+      const today = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      })
+
+      // Header
+      doc.setFontSize(22)
+      doc.setTextColor(28, 43, 58)
+      doc.text('MSConnect', 20, 20)
+
+      doc.setFontSize(12)
+      doc.setTextColor(107, 114, 128)
+      doc.text('Patient Progress Report', 20, 28)
+      doc.text(`Generated: ${today}`, 20, 35)
+
+      // Patient info
+      doc.setFontSize(14)
+      doc.setTextColor(28, 43, 58)
+      doc.text('Patient Information', 20, 50)
+
+      doc.setFontSize(11)
+      doc.setTextColor(44, 44, 44)
+      doc.text(`Name: ${userProfile.display_name}`, 20, 60)
+      doc.text(`MS Type: ${userProfile.ms_type?.toUpperCase() ?? 'Not specified'}`, 20, 68)
+      if (userProfile.diagnosis_year) {
+        doc.text(`Diagnosis Year: ${userProfile.diagnosis_year}`, 20, 76)
+      }
+
+      // Summary stats
+      doc.setFontSize(14)
+      doc.setTextColor(28, 43, 58)
+      doc.text('30-Day Summary', 20, 95)
+
+      const avgEnergy = checkins.length
+        ? (checkins.reduce((s, c) => s + c.energy_level, 0) / checkins.length).toFixed(1)
+        : 'N/A'
+      const avgMood = checkins.length
+        ? (checkins.reduce((s, c) => s + c.mood_score, 0) / checkins.length).toFixed(1)
+        : 'N/A'
+      const goodDays = checkins.filter(c => c.day_tag === 'good').length
+      const hardDays = checkins.filter(c => c.day_tag === 'hard').length
+      const totalSessions = sessions.length
+      const avgScore = sessions.length
+        ? (sessions.reduce((s, t) => s + Number(t.score_normalized), 0) / sessions.length * 100).toFixed(0)
+        : 'N/A'
+
+      ;(doc as any).autoTable({
+        startY: 100,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Check-ins completed', checkins.length],
+          ['Average energy level (1-5)', avgEnergy],
+          ['Average mood score (1-5)', avgMood],
+          ['Good days tagged', goodDays],
+          ['Hard days tagged', hardDays],
+          ['Training sessions completed', totalSessions],
+          ['Average training score', avgScore === 'N/A' ? 'N/A' : `${avgScore}%`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [28, 43, 58] },
+        styles: { fontSize: 10 },
+      })
+
+      // Check-in history table
+      if (checkins.length > 0) {
+        const finalY = (doc as any).lastAutoTable.finalY + 15
+        doc.setFontSize(14)
+        doc.setTextColor(28, 43, 58)
+        doc.text('Daily Check-in History', 20, finalY)
+
+        ;(doc as any).autoTable({
+          startY: finalY + 5,
+          head: [['Date', 'Energy', 'Mood', 'Day Tag', 'Symptoms']],
+          body: checkins.map(c => [
+            new Date(c.checkin_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            c.energy_level,
+            c.mood_score,
+            c.day_tag ?? '—',
+            c.symptom_flags?.join(', ') || 'None'
+          ]),
+          theme: 'striped',
+          headStyles: { fillColor: [92, 122, 107] },
+          styles: { fontSize: 9 },
+        })
+      }
+
+      doc.save(`msconnect-report-${today.replace(/,?\s/g, '-')}.pdf`)
+    } catch (e) {
+      console.error('Export error:', e)
+    }
+
+    setExporting(false)
+  }
 
   const chartData = checkins.map(c => ({
     date: new Date(c.checkin_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -49,23 +170,36 @@ export default function Progress() {
   const avgEnergy = checkins.length
     ? (checkins.reduce((sum, c) => sum + c.energy_level, 0) / checkins.length).toFixed(1)
     : '—'
-
   const avgMood = checkins.length
     ? (checkins.reduce((sum, c) => sum + c.mood_score, 0) / checkins.length).toFixed(1)
     : '—'
-
   const goodDays = checkins.filter(c => c.day_tag === 'good').length
   const hardDays = checkins.filter(c => c.day_tag === 'hard').length
 
   return (
     <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
-      <div style={{ padding: '48px 20px 24px' }}>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
-          Progress
+      <div style={{ padding: '48px 20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>
+            Progress
+          </div>
+          <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
+            Your last 30 days
+          </div>
         </div>
-        <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
-          Your last 30 days
-        </div>
+        <button
+          onClick={generateReport}
+          disabled={exporting || checkins.length === 0}
+          style={{
+            background: exporting ? '#2E4057' : '#5C7A6B',
+            color: '#FAF7F2', border: 'none', borderRadius: '50px',
+            padding: '10px 18px', fontSize: '13px', fontWeight: 500,
+            cursor: checkins.length === 0 ? 'not-allowed' : 'pointer',
+            opacity: checkins.length === 0 ? 0.5 : 1,
+            transition: 'all 0.2s'
+          }}>
+          {exporting ? 'Generating...' : '📄 Export for Doctor'}
+        </button>
       </div>
 
       {loading && (
@@ -75,7 +209,6 @@ export default function Progress() {
       {!loading && (
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* Stats row */}
           <div style={{ display: 'flex', gap: '12px' }}>
             {[
               { label: 'Avg Energy', value: avgEnergy, emoji: '⚡' },
@@ -94,7 +227,6 @@ export default function Progress() {
             ))}
           </div>
 
-          {/* Chart */}
           <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>
               Energy & Mood — 30 Days
@@ -121,7 +253,6 @@ export default function Progress() {
             )}
           </div>
 
-          {/* Check-in history */}
           <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>
               Recent Check-ins
