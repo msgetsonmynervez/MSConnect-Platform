@@ -50,12 +50,12 @@ export default function TapTarget() {
       .select('id')
       .single()
     if (data) setSessionId(data.id)
-
     setTargets([])
     setHits(0)
     setMisses(0)
     hitsRef.current = 0
     missesRef.current = 0
+    nextId.current = 0
     setTimeLeft(GAME_DURATION)
     setPhase('playing')
 
@@ -74,31 +74,39 @@ export default function TapTarget() {
     spawnRef.current = setInterval(() => {
       const size = 48 + Math.random() * 32
       const x = 5 + Math.random() * 80
-      const y = 10 + Math.random() * 70
-      const id = nextId.current++
-      setTargets(prev => [
-        ...prev.filter(t => Date.now() - t.born < TARGET_LIFETIME),
-        { id, x, y, size, born: Date.now() },
-      ])
+      const y = 15 + Math.random() * 65
+      const id = nextId.current
+      nextId.current += 1
+      const born = Date.now()
+      setTargets(prev => {
+        const alive = prev.filter(t => Date.now() - t.born < TARGET_LIFETIME)
+        return [...alive, { id, x, y, size, born }]
+      })
     }, 900)
   }
 
   useEffect(() => {
-    if (phase === 'done') endGame()
+    if (phase === 'done') {
+      finishGame()
+    }
   }, [phase])
 
-  async function endGame() {
+  async function finishGame() {
     if (timerRef.current) clearInterval(timerRef.current)
     if (spawnRef.current) clearInterval(spawnRef.current)
-    const total = hitsRef.current + missesRef.current
-    const acc = total > 0 ? hitsRef.current / total : 0
-    const finalScore = Math.min(1, (hitsRef.current / 30) * 0.6 + acc * 0.4)
-    setScore(Math.round(finalScore * 100))
+    const h = hitsRef.current
+    const m = missesRef.current
+    const total = h + m
+    const acc = total > 0 ? h / total : 0
+    const speed = Math.min(1, h / 30)
+    const final = Math.round((speed * 0.6 + acc * 0.4) * 100)
+    setScore(final)
+    const norm = final / 100
     if (sessionId && userId) {
       await supabase.from('training_sessions').update({
         status: 'completed',
         duration_seconds: GAME_DURATION,
-        score_normalized: finalScore,
+        score_normalized: norm,
       }).eq('id', sessionId)
       await supabase.rpc('recalculate_streak', { p_user_id: userId })
     }
@@ -123,40 +131,79 @@ export default function TapTarget() {
     ? Math.round((hits / (hits + misses)) * 100)
     : 0
 
+  const grade = score >= 80 ? 'Lightning Fast' : score >= 50 ? 'Good Speed' : 'Keep Practicing'
+  const gradeEmoji = score >= 80 ? 'Fast!' : score >= 50 ? 'Good' : 'Keep Going'
+  const ringColor = '#FFB000'
+
   if (phase === 'ready') {
     return (
       <div style={{
-        minHeight: '100vh', background: '#1C2B3A',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        minHeight: '100vh',
+        background: '#1C2B3A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
       }}>
         <div style={{
-          background: '#FAF7F2', borderRadius: '24px',
-          padding: '40px 28px', width: '100%', maxWidth: '400px', textAlign: 'center',
+          background: '#FAF7F2',
+          borderRadius: '24px',
+          padding: '40px 28px',
+          width: '100%',
+          maxWidth: '400px',
+          textAlign: 'center',
         }}>
-          <div style={{ fontSize: '52px', marginBottom: '16px' }}>⚡</div>
           <div style={{
-            fontFamily: 'Georgia, serif', fontSize: '24px',
-            fontWeight: 600, color: '#1C2B3A', marginBottom: '8px',
-          }}>Speed Sort</div>
+            fontSize: '52px',
+            marginBottom: '16px',
+            color: '#FFB000',
+            fontWeight: 800,
+          }}>
+            GO
+          </div>
+          <div style={{
+            fontFamily: 'Georgia, serif',
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#1C2B3A',
+            marginBottom: '8px',
+          }}>
+            Speed Sort
+          </div>
           <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '24px' }}>
             Processing Speed
           </div>
           <div style={{
-            background: '#EDF3F0', borderRadius: '16px',
-            padding: '16px', marginBottom: '28px', textAlign: 'left',
+            background: '#EDF3F0',
+            borderRadius: '16px',
+            padding: '16px',
+            marginBottom: '28px',
+            textAlign: 'left',
           }}>
-            <div style={{ fontSize: '13px', color: '#5C7A6B', fontWeight: 600, marginBottom: '8px' }}>
+            <div style={{
+              fontSize: '13px',
+              color: '#5C7A6B',
+              fontWeight: 600,
+              marginBottom: '8px',
+            }}>
               How to play
             </div>
             <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.7 }}>
               Tap the circles as fast as you can before they disappear.
-              Each circle only lasts about 1 second. Score as many hits as possible in 60 seconds.
+              Each circle only lasts about 1 second.
+              Score as many hits as possible in 60 seconds.
             </div>
           </div>
           <button onClick={startGame} style={{
-            background: '#1C2B3A', color: '#FAF7F2', border: 'none',
-            borderRadius: '50px', padding: '18px', fontSize: '16px',
-            fontWeight: 600, cursor: 'pointer', width: '100%',
+            background: '#1C2B3A',
+            color: '#FAF7F2',
+            border: 'none',
+            borderRadius: '50px',
+            padding: '18px',
+            fontSize: '16px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            width: '100%',
           }}>
             Start Game
           </button>
@@ -166,37 +213,68 @@ export default function TapTarget() {
   }
 
   if (phase === 'done') {
-    const grade = score >= 80 ? 'Lightning Fast' : score >= 50 ? 'Good Speed' : 'Keep Practicing'
-    const gradeEmoji = score >= 80 ? '⚡' : score >= 50 ? '💪' : '🌱'
+    const ringDeg = score * 3.6
+    const ringStyle = 'conic-gradient(' + ringColor + ' ' + ringDeg + 'deg, #E0E0E0 0deg)'
     return (
       <div style={{
-        minHeight: '100vh', background: '#1C2B3A',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        minHeight: '100vh',
+        background: '#1C2B3A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
       }}>
         <div style={{
-          background: '#FAF7F2', borderRadius: '24px',
-          padding: '40px 28px', width: '100%', maxWidth: '400px', textAlign: 'center',
+          background: '#FAF7F2',
+          borderRadius: '24px',
+          padding: '40px 28px',
+          width: '100%',
+          maxWidth: '400px',
+          textAlign: 'center',
         }}>
-          <div style={{ fontSize: '52px', marginBottom: '12px' }}>{gradeEmoji}</div>
           <div style={{
-            fontFamily: 'Georgia, serif', fontSize: '24px',
-            fontWeight: 600, color: '#1C2B3A', marginBottom: '4px',
-          }}>{grade}</div>
+            fontSize: '32px',
+            fontWeight: 800,
+            color: '#FFB000',
+            marginBottom: '12px',
+          }}>
+            {gradeEmoji}
+          </div>
+          <div style={{
+            fontFamily: 'Georgia, serif',
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#1C2B3A',
+            marginBottom: '4px',
+          }}>
+            {grade}
+          </div>
           <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '28px' }}>
             Speed Sort
           </div>
           <div style={{
-            width: '120px', height: '120px', borderRadius: '50%',
-            background: 'conic-gradient(#FFB000 ' + score * 3.6 + 'deg, #E0E0E0 0deg)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            background: ringStyle,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             margin: '0 auto 28px',
           }}>
             <div style={{
-              width: '90px', height: '90px', borderRadius: '50%',
-              background: '#FAF7F2', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+              width: '90px',
+              height: '90px',
+              borderRadius: '50%',
+              background: '#FAF7F2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
             }}>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#1C2B3A' }}>{score}%</div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: '#1C2B3A' }}>
+                {score + '%'}
+              </div>
               <div style={{ fontSize: '10px', color: '#6B7280' }}>score</div>
             </div>
           </div>
@@ -207,7 +285,10 @@ export default function TapTarget() {
               { label: 'Misses', value: misses },
             ].map(s => (
               <div key={s.label} style={{
-                flex: 1, background: '#EDF3F0', borderRadius: '14px', padding: '12px 8px',
+                flex: 1,
+                background: '#EDF3F0',
+                borderRadius: '14px',
+                padding: '12px 8px',
               }}>
                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#1C2B3A' }}>
                   {s.value}
@@ -220,16 +301,28 @@ export default function TapTarget() {
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button onClick={startGame} style={{
-              flex: 1, background: 'transparent', color: '#5C7A6B',
-              border: '1.5px solid #5C7A6B', borderRadius: '50px',
-              padding: '14px', fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+              flex: 1,
+              background: 'transparent',
+              color: '#5C7A6B',
+              border: '1.5px solid #5C7A6B',
+              borderRadius: '50px',
+              padding: '14px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
             }}>
               Play Again
             </button>
             <button onClick={() => navigate('/train')} style={{
-              flex: 1, background: '#1C2B3A', color: '#FAF7F2',
-              border: 'none', borderRadius: '50px', padding: '14px',
-              fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+              flex: 1,
+              background: '#1C2B3A',
+              color: '#FAF7F2',
+              border: 'none',
+              borderRadius: '50px',
+              padding: '14px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
             }}>
               All Games
             </button>
@@ -243,30 +336,39 @@ export default function TapTarget() {
     <div
       onClick={missClick}
       style={{
-        minHeight: '100vh', background: '#1C2B3A',
-        position: 'relative', overflow: 'hidden', userSelect: 'none',
+        minHeight: '100vh',
+        background: '#1C2B3A',
+        position: 'relative',
+        overflow: 'hidden',
+        userSelect: 'none',
       }}
     >
       <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', padding: '48px 24px 0',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '48px 24px 0',
       }}>
         <div style={{ fontSize: '14px', fontWeight: 600, color: '#FAF7F2' }}>
           {'Hits: ' + hits}
         </div>
         <div style={{
           background: timeLeft <= 10 ? '#C4714A' : '#5C7A6B',
-          color: '#FAF7F2', borderRadius: '20px', padding: '6px 14px',
-          fontSize: '15px', fontWeight: 700, minWidth: '52px', textAlign: 'center',
+          color: '#FAF7F2',
+          borderRadius: '20px',
+          padding: '6px 14px',
+          fontSize: '15px',
+          fontWeight: 700,
+          minWidth: '52px',
+          textAlign: 'center',
           transition: 'background 0.3s',
         }}>
-          {timeLeft}s
+          {timeLeft + 's'}
         </div>
         <div style={{ fontSize: '14px', color: '#8FAF9F' }}>
           {'Acc: ' + accuracy + '%'}
         </div>
       </div>
-
       {targets.map(target => (
         <button
           key={target.id}
@@ -285,20 +387,12 @@ export default function TapTarget() {
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '20px',
-            animation: 'popIn 0.15s ease-out',
             boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           }}
         >
-          🎯
+          +
         </button>
       ))}
-
-      <style>{`
-        @keyframes popIn {
-          0% { transform: scale(0); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   )
 }
