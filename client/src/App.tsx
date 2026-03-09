@@ -13,6 +13,8 @@ import Journal from './pages/Journal'
 import Goals from './pages/Goals'
 import RestroomFinder from './pages/RestroomFinder'
 import NewsHub from './pages/NewsHub'
+import MemoryMatch from './pages/games/MemoryMatch'
+import TapTarget from './pages/games/TapTarget'
 import NotFound from './pages/not-found'
 
 export default function App() {
@@ -34,6 +36,8 @@ export default function App() {
           <Route path="/goals" element={<Goals />} />
           <Route path="/restroom" element={<RestroomFinder />} />
           <Route path="/news" element={<NewsHub />} />
+          <Route path="/games/memory-match" element={<MemoryMatch />} />
+          <Route path="/games/tap-target" element={<TapTarget />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </EnergyProvider>
