@@ -190,7 +190,7 @@ export default function DiscoverySurvey() {
     setIsSubmitting(false)
 
     if (error) {
-      setSubmitError(error.message + ' | code: ' + error.code)
+      setSubmitError('Something went wrong saving your response. Please try again.')
       return
     }
 
