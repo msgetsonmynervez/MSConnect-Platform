@@ -21,73 +21,74 @@ const initialAnswers: Answers = {
 }
 
 const surveyStyles = `
-  .sv-wrap { max-width:660px; margin:0 auto; padding:48px 24px 100px; position:relative; z-index:1; font-family:inherit; }
-  .sv-glow { position:fixed; top:-200px; left:50%; transform:translateX(-50%); width:800px; height:500px; background:radial-gradient(ellipse,rgba(92,122,107,0.1) 0%,transparent 70%); pointer-events:none; z-index:0; }
-  .sv-eyebrow { display:inline-flex; align-items:center; gap:8px; background:var(--sage-pale); border:1px solid rgba(92,122,107,0.3); border-radius:100px; padding:6px 14px; margin-bottom:24px; }
-  .sv-eyebrow-dot { width:6px; height:6px; border-radius:50%; background:var(--sage); animation:sv-pulse 2s ease infinite; }
-  .sv-eyebrow span { font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--sage); }
-  @keyframes sv-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-  .sv-h1 { font-family:Georgia,serif; font-size:clamp(28px,5.5vw,42px); font-weight:300; line-height:1.15; color:var(--navy); margin-bottom:18px; }
-  .sv-h1 em { font-style:italic; color:var(--sage); }
-  .sv-intro { font-size:15px; color:var(--text-soft); line-height:1.75; max-width:500px; margin-bottom:24px; }
-  .sv-meta { display:flex; gap:24px; margin-bottom:40px; flex-wrap:wrap; }
-  .sv-meta-pill { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-soft); }
-  .sv-prog-wrap { margin-bottom:32px; }
-  .sv-prog-meta { display:flex; justify-content:space-between; margin-bottom:10px; }
-  .sv-prog-label { font-size:12px; color:var(--text-soft); letter-spacing:0.06em; }
-  .sv-prog-frac { font-size:13px; color:var(--sage); font-weight:600; }
-  .sv-prog-track { height:3px; background:#E0E0E0; border-radius:2px; overflow:hidden; }
-  .sv-prog-fill { height:100%; background:linear-gradient(90deg,var(--sage),var(--sage-light)); border-radius:2px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
-  .sv-card { background:var(--cream); border:1px solid #E0E0E0; border-radius:20px; padding:36px; margin-bottom:16px; position:relative; overflow:hidden; animation:sv-fadeUp 0.4s ease both; }
-  .sv-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(92,122,107,0.2),transparent); }
-  @keyframes sv-fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  .sv-q-num { font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--sage); margin-bottom:10px; opacity:0.8; }
-  .sv-q-text { font-family:Georgia,serif; font-size:clamp(16px,3vw,20px); font-weight:300; line-height:1.45; color:var(--navy); margin-bottom:8px; }
-  .sv-q-sub { font-size:13px; color:var(--text-soft); margin-bottom:24px; line-height:1.5; }
-  .sv-options { display:flex; flex-direction:column; gap:9px; }
-  .sv-option { display:flex; align-items:center; gap:14px; padding:13px 16px; border:1px solid #E0E0E0; border-radius:12px; cursor:pointer; transition:all 0.18s ease; background:white; font-size:14px; color:var(--text-soft); width:100%; text-align:left; }
-  .sv-option:hover,.sv-option.sel { border-color:var(--sage); background:var(--sage-pale); color:var(--navy); }
-  .sv-option.sel { font-weight:500; }
-  .sv-opt-dot { width:16px; height:16px; border-radius:50%; border:1.5px solid #C0C0C0; flex-shrink:0; transition:all 0.18s; display:flex; align-items:center; justify-content:center; }
-  .sv-option.sel .sv-opt-dot { border-color:var(--sage); background:var(--sage); }
-  .sv-option.sel .sv-opt-dot::after { content:''; width:5px; height:5px; border-radius:50%; background:white; }
-  .sv-multi-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-  .sv-multi-opt { padding:13px 14px; border:1px solid #E0E0E0; border-radius:12px; cursor:pointer; background:white; font-size:13px; color:var(--text-soft); text-align:center; line-height:1.4; transition:all 0.18s ease; }
-  .sv-multi-opt:hover,.sv-multi-opt.sel { border-color:var(--sage); background:var(--sage-pale); color:var(--sage); }
-  .sv-multi-opt.sel { font-weight:500; }
-  .sv-rank-item { display:flex; align-items:center; gap:14px; padding:13px 16px; border:1px solid #E0E0E0; border-radius:12px; background:white; cursor:pointer; transition:all 0.18s ease; font-size:14px; color:var(--text-soft); width:100%; text-align:left; }
-  .sv-rank-item:hover,.sv-rank-item.sel { border-color:var(--terracotta); background:#FDF5F0; color:var(--terracotta); }
-  .sv-rank-item.sel { font-weight:500; }
-  .sv-rank-badge { width:24px; height:24px; border-radius:50%; border:1.5px solid #C0C0C0; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--text-soft); transition:all 0.18s; }
-  .sv-rank-item.sel .sv-rank-badge { border-color:var(--terracotta); background:var(--terracotta); color:white; }
-  .sv-scale-btns { display:flex; gap:8px; }
-  .sv-scale-btn { flex:1; padding:14px 4px; border:1px solid #E0E0E0; border-radius:10px; background:white; color:var(--text-soft); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.18s ease; }
-  .sv-scale-btn:hover,.sv-scale-btn.sel { border-color:var(--sage); background:var(--sage); color:white; }
-  .sv-scale-labels { display:flex; justify-content:space-between; margin-top:10px; font-size:11px; color:var(--text-soft); }
-  .sv-textarea { width:100%; padding:16px; border:1px solid #E0E0E0; border-radius:12px; background:white; color:var(--navy); font-family:inherit; font-size:14px; line-height:1.65; resize:vertical; min-height:130px; transition:border-color 0.2s; outline:none; box-sizing:border-box; }
-  .sv-textarea:focus { border-color:var(--sage); }
-  .sv-hint { font-size:11px; color:var(--text-soft); margin-top:12px; text-align:center; letter-spacing:0.04em; }
-  .sv-nav { display:flex; gap:10px; align-items:center; margin-top:28px; }
-  .sv-btn-back { padding:12px 20px; border:1px solid #E0E0E0; border-radius:10px; background:transparent; color:var(--text-soft); font-family:inherit; font-size:14px; cursor:pointer; transition:all 0.18s; flex-shrink:0; }
-  .sv-btn-back:hover { border-color:var(--sage); color:var(--navy); }
-  .sv-btn-back:disabled { opacity:0.25; cursor:not-allowed; }
-  .sv-btn-next { flex:1; padding:14px 28px; border:none; border-radius:10px; background:var(--sage); color:white; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.18s; }
-  .sv-btn-next:hover { background:var(--navy); }
-  .sv-btn-next:disabled { opacity:0.3; cursor:not-allowed; }
-  .sv-skip-wrap { text-align:center; margin-top:12px; }
-  .sv-skip-btn { background:none; border:none; color:var(--text-soft); font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  .sv-skip-btn:hover { color:var(--navy); }
-  .sv-error { background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px 16px; font-size:13px; color:#DC2626; margin-bottom:12px; }
-  .sv-ty { text-align:center; padding:48px 16px; animation:sv-fadeUp 0.6s ease both; }
-  .sv-ty-badge { display:inline-flex; align-items:center; gap:8px; background:var(--sage-pale); border:1px solid rgba(92,122,107,0.3); border-radius:100px; padding:7px 16px; margin-bottom:28px; }
-  .sv-ty-badge span { font-size:12px; font-weight:600; color:var(--sage); letter-spacing:0.08em; text-transform:uppercase; }
-  .sv-ty h2 { font-family:Georgia,serif; font-size:32px; font-weight:300; margin-bottom:16px; line-height:1.2; color:var(--navy); }
-  .sv-ty p { font-size:15px; color:var(--text-soft); line-height:1.75; max-width:420px; margin:0 auto 12px; }
-  .sv-ty-note { font-size:12px; color:var(--text-soft); margin-top:24px; margin-bottom:32px; }
-  .sv-try-btn { display:inline-block; padding:14px 32px; background:var(--sage); color:white; border:none; border-radius:10px; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; text-decoration:none; transition:background 0.18s; }
-  .sv-try-btn:hover { background:var(--navy); }
-  @media (prefers-reduced-motion:reduce) { *{animation:none!important;transition-duration:0.01ms!important} }
-  @media (max-width:480px) { .sv-card{padding:24px 18px} .sv-multi-grid{grid-template-columns:1fr} .sv-scale-btns{gap:5px} .sv-scale-btn{font-size:13px;padding:12px 2px} .sv-meta{gap:14px} }
+  .sv-wrap { max-width: 660px; margin: 0 auto; padding: 48px 24px 100px; position: relative; z-index: 1; font-family: inherit; }
+  .sv-glow { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(92,122,107,0.1) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+  .sv-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: var(--sage-pale); border: 1px solid rgba(92,122,107,0.3); border-radius: 100px; padding: 6px 14px; margin-bottom: 24px; }
+  .sv-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: sv-pulse 2s ease infinite; }
+  .sv-eyebrow span { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); }
+  @keyframes sv-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+  .sv-h1 { font-family: Georgia, serif; font-size: clamp(28px, 5.5vw, 42px); font-weight: 300; line-height: 1.15; color: var(--navy); margin-bottom: 18px; }
+  .sv-h1 em { font-style: italic; color: var(--sage); }
+  .sv-intro { font-size: 15px; color: var(--text-soft); line-height: 1.75; max-width: 500px; margin-bottom: 24px; }
+  .sv-meta { display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap; }
+  .sv-meta-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-soft); }
+  .sv-prog-wrap { margin-bottom: 32px; }
+  .sv-prog-meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .sv-prog-label { font-size: 12px; color: var(--text-soft); letter-spacing: 0.06em; }
+  .sv-prog-frac { font-size: 13px; color: var(--sage); font-weight: 600; }
+  .sv-prog-track { height: 3px; background: #E0E0E0; border-radius: 2px; overflow: hidden; }
+  .sv-prog-fill { height: 100%; background: linear-gradient(90deg, var(--sage), var(--sage-light)); border-radius: 2px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .sv-card { background: var(--cream); border: 1px solid #E0E0E0; border-radius: 20px; padding: 36px; margin-bottom: 16px; position: relative; overflow: hidden; animation: sv-fadeUp 0.4s ease both; }
+  .sv-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(92,122,107,0.2), transparent); }
+  @keyframes sv-fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .sv-q-num { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sage); margin-bottom: 10px; opacity: 0.8; }
+  .sv-q-text { font-family: Georgia, serif; font-size: clamp(16px, 3vw, 20px); font-weight: 300; line-height: 1.45; color: var(--navy); margin-bottom: 8px; }
+  .sv-q-sub { font-size: 13px; color: var(--text-soft); margin-bottom: 24px; line-height: 1.5; }
+  .sv-options { display: flex; flex-direction: column; gap: 9px; }
+  .sv-option { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1px solid #E0E0E0; border-radius: 12px; cursor: pointer; transition: all 0.18s ease; background: white; font-size: 14px; color: var(--text-soft); width: 100%; text-align: left; }
+  .sv-option:hover { border-color: var(--sage); background: var(--sage-pale); color: var(--navy); }
+  .sv-option.sel { border-color: var(--sage); background: var(--sage-pale); color: var(--navy); font-weight: 500; }
+  .sv-opt-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #C0C0C0; flex-shrink: 0; transition: all 0.18s; display: flex; align-items: center; justify-content: center; }
+  .sv-option.sel .sv-opt-dot { border-color: var(--sage); background: var(--sage); }
+  .sv-option.sel .sv-opt-dot::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: white; }
+  .sv-multi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .sv-multi-opt { padding: 13px 14px; border: 1px solid #E0E0E0; border-radius: 12px; cursor: pointer; background: white; font-size: 13px; color: var(--text-soft); text-align: center; line-height: 1.4; transition: all 0.18s ease; }
+  .sv-multi-opt:hover { border-color: var(--sage); color: var(--navy); background: var(--sage-pale); }
+  .sv-multi-opt.sel { border-color: var(--sage); background: var(--sage-pale); color: var(--sage); font-weight: 500; }
+  .sv-rank-item { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1px solid #E0E0E0; border-radius: 12px; background: white; cursor: pointer; transition: all 0.18s ease; font-size: 14px; color: var(--text-soft); width: 100%; text-align: left; }
+  .sv-rank-item:hover { border-color: var(--terracotta); background: #FDF5F0; color: var(--navy); }
+  .sv-rank-item.sel { border-color: var(--terracotta); background: #FDF5F0; color: var(--terracotta); font-weight: 500; }
+  .sv-rank-badge { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #C0C0C0; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-soft); transition: all 0.18s; }
+  .sv-rank-item.sel .sv-rank-badge { border-color: var(--terracotta); background: var(--terracotta); color: white; }
+  .sv-scale-btns { display: flex; gap: 8px; }
+  .sv-scale-btn { flex: 1; padding: 14px 4px; border: 1px solid #E0E0E0; border-radius: 10px; background: white; color: var(--text-soft); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.18s ease; }
+  .sv-scale-btn:hover { border-color: var(--sage); color: var(--navy); background: var(--sage-pale); }
+  .sv-scale-btn.sel { border-color: var(--sage); background: var(--sage); color: white; }
+  .sv-scale-labels { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: var(--text-soft); }
+  .sv-textarea { width: 100%; padding: 16px; border: 1px solid #E0E0E0; border-radius: 12px; background: white; color: var(--navy); font-family: inherit; font-size: 14px; line-height: 1.65; resize: vertical; min-height: 130px; transition: border-color 0.2s; outline: none; box-sizing: border-box; }
+  .sv-textarea:focus { border-color: var(--sage); }
+  .sv-hint { font-size: 11px; color: var(--text-soft); margin-top: 12px; text-align: center; letter-spacing: 0.04em; }
+  .sv-nav { display: flex; gap: 10px; align-items: center; margin-top: 28px; }
+  .sv-btn-back { padding: 12px 20px; border: 1px solid #E0E0E0; border-radius: 10px; background: transparent; color: var(--text-soft); font-family: inherit; font-size: 14px; cursor: pointer; transition: all 0.18s; flex-shrink: 0; }
+  .sv-btn-back:hover { border-color: var(--sage); color: var(--navy); }
+  .sv-btn-back:disabled { opacity: 0.25; cursor: not-allowed; }
+  .sv-btn-next { flex: 1; padding: 14px 28px; border: none; border-radius: 10px; background: var(--sage); color: white; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.18s; letter-spacing: 0.01em; }
+  .sv-btn-next:hover { background: var(--navy); }
+  .sv-btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+  .sv-skip-wrap { text-align: center; margin-top: 12px; }
+  .sv-skip-btn { background: none; border: none; color: var(--text-soft); font-family: inherit; font-size: 12px; cursor: pointer; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
+  .sv-skip-btn:hover { color: var(--navy); }
+  .sv-error { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #DC2626; margin-bottom: 12px; }
+  .sv-ty { text-align: center; padding: 48px 16px; animation: sv-fadeUp 0.6s ease both; }
+  .sv-ty-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--sage-pale); border: 1px solid rgba(92,122,107,0.3); border-radius: 100px; padding: 7px 16px; margin-bottom: 28px; }
+  .sv-ty-badge span { font-size: 12px; font-weight: 600; color: var(--sage); letter-spacing: 0.08em; text-transform: uppercase; }
+  .sv-ty h2 { font-family: Georgia, serif; font-size: 32px; font-weight: 300; margin-bottom: 16px; line-height: 1.2; color: var(--navy); }
+  .sv-ty p { font-size: 15px; color: var(--text-soft); line-height: 1.75; max-width: 420px; margin: 0 auto 12px; }
+  .sv-ty-note { font-size: 12px; color: var(--text-soft); margin-top: 24px; margin-bottom: 32px; }
+  .sv-try-btn { display: inline-block; padding: 14px 32px; background: var(--sage); color: white; border: none; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.18s; }
+  .sv-try-btn:hover { background: var(--navy); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition-duration: 0.01ms !important; } }
+  @media (max-width: 480px) { .sv-card { padding: 24px 18px; } .sv-multi-grid { grid-template-columns: 1fr; } .sv-scale-btns { gap: 5px; } .sv-scale-btn { font-size: 13px; padding: 12px 2px; } .sv-meta { gap: 14px; } }
 `
 
 export default function DiscoverySurvey() {
@@ -155,14 +156,20 @@ export default function DiscoverySurvey() {
   async function handleSubmit() {
     setSubmitError('')
     setIsSubmitting(true)
+
     const q9val = answers.q9
-    const finalQ9 = typeof q9val === 'string' && q9val !== 'skipped' && q9val.trim() !== '' ? q9val.trim() : 'skipped'
+    const finalQ9 = typeof q9val === 'string' && q9val !== 'skipped' && q9val.trim() !== ''
+      ? q9val.trim()
+      : 'skipped'
+
     const allAnswers = { ...answers, q9: finalQ9 }
+
     const skipped: string[] = []
     if (allAnswers.q2 === 'skipped') skipped.push('q2')
     if (allAnswers.q3 === 'skipped') skipped.push('q3')
     if (allAnswers.q5 === 'skipped') skipped.push('q5')
     if (allAnswers.q9 === 'skipped') skipped.push('q9')
+
     const payload = {
       ms_type: allAnswers.q1 || null,
       daily_symptoms: allAnswers.q2 === 'skipped' ? null : allAnswers.q2 as string[],
@@ -175,14 +182,25 @@ export default function DiscoverySurvey() {
       open_feedback: allAnswers.q9 === 'skipped' ? null : allAnswers.q9 as string,
       skipped_questions: skipped,
     }
-    const { error } = await supabase.from('discovery_survey_responses').insert(payload)
+
+    const { error } = await supabase
+      .from('discovery_survey_responses')
+      .insert(payload)
+
     setIsSubmitting(false)
-    if (error) { setSubmitError('Something went wrong. Please try again.'); return }
+
+    if (error) {
+      setSubmitError(error.message + ' | code: ' + error.code)
+      return
+    }
+
     setShowThankYou(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const outerStyle: React.CSSProperties = { background: 'var(--cream)', minHeight: '100vh', position: 'relative', overflow: 'hidden' }
+  const outerStyle: React.CSSProperties = {
+    background: 'var(--cream)', minHeight: '100vh', position: 'relative', overflow: 'hidden',
+  }
 
   if (showThankYou) {
     return (
@@ -208,6 +226,7 @@ export default function DiscoverySurvey() {
       <style>{surveyStyles}</style>
       <div className="sv-glow" />
       <div className="sv-wrap">
+
         <div style={{ marginBottom: '52px', animation: 'sv-fadeUp 0.7s ease both' }}>
           <div className="sv-eyebrow">
             <div className="sv-eyebrow-dot" />
@@ -230,6 +249,7 @@ export default function DiscoverySurvey() {
             </div>
           </div>
         </div>
+
         <div className="sv-prog-wrap">
           <div className="sv-prog-meta">
             <span className="sv-prog-label">Progress</span>
@@ -247,7 +267,7 @@ export default function DiscoverySurvey() {
             <div className="sv-q-sub">This helps us understand the range of experiences we are designing for.</div>
             <div className="sv-options">
               {['Relapsing-Remitting MS (RRMS)','Secondary Progressive MS (SPMS)','Primary Progressive MS (PPMS)','Clinically Isolated Syndrome / awaiting diagnosis','I\'d prefer not to say'].map(opt => (
-                <button key={opt} className={'sv-option' + (isSelected('q1',opt) ? ' sel' : '')} onClick={() => pickSingle('q1',opt)}>
+                <button key={opt} className={'sv-option' + (isSelected('q1', opt) ? ' sel' : '')} onClick={() => pickSingle('q1', opt)}>
                   <div className="sv-opt-dot" />{opt}
                 </button>
               ))}
@@ -267,7 +287,7 @@ export default function DiscoverySurvey() {
             <div className="sv-multi-grid">
               {['Fatigue','Cognitive fog','Mobility / balance','Pain or numbness','Mood / anxiety','Vision changes','Sleep disruption','Heat sensitivity'].map(opt => {
                 const arr = Array.isArray(answers.q2) ? answers.q2 : []
-                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q2',opt)}>{opt}</button>
+                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q2', opt)}>{opt}</button>
               })}
             </div>
             <div className="sv-hint">Tap to select, tap again to deselect</div>
@@ -287,7 +307,7 @@ export default function DiscoverySurvey() {
             <div className="sv-multi-grid">
               {['Paper diary or journal','General health app','MS-specific app','Wearable / smartwatch','I rely on memory','I don\'t track currently'].map(opt => {
                 const arr = Array.isArray(answers.q3) ? answers.q3 : []
-                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q3',opt)}>{opt}</button>
+                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q3', opt)}>{opt}</button>
               })}
             </div>
             <div className="sv-hint">Tap to select, tap again to deselect</div>
@@ -331,7 +351,7 @@ export default function DiscoverySurvey() {
             <div className="sv-multi-grid">
               {['Larger text sizes','High contrast mode','Reduced animations','Dark mode','Voice input','Simple / low-clutter screens','None of the above'].map(opt => {
                 const arr = Array.isArray(answers.q5) ? answers.q5 : []
-                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q5',opt)}>{opt}</button>
+                return <button key={opt} className={'sv-multi-opt' + (arr.includes(opt) ? ' sel' : '')} onClick={() => toggleMulti('q5', opt)}>{opt}</button>
               })}
             </div>
             <div className="sv-hint">Tap to select, tap again to deselect</div>
@@ -350,7 +370,7 @@ export default function DiscoverySurvey() {
             <div className="sv-q-sub">We are building a difficult day mode — your answer tells us what that should look like.</div>
             <div className="sv-options">
               {['Simplify to just one or two essential actions','Detect I\'m struggling and check in on me gently','Give me shorter, easier versions of exercises','Stay out of my way — let me use it normally','Pause my streaks and goals so I don\'t feel guilty'].map(opt => (
-                <button key={opt} className={'sv-option' + (isSelected('q6',opt) ? ' sel' : '')} onClick={() => pickSingle('q6',opt)}>
+                <button key={opt} className={'sv-option' + (isSelected('q6', opt) ? ' sel' : '')} onClick={() => pickSingle('q6', opt)}>
                   <div className="sv-opt-dot" />{opt}
                 </button>
               ))}
@@ -369,7 +389,7 @@ export default function DiscoverySurvey() {
             <div className="sv-q-sub">This helps us design reporting and appointment features.</div>
             <div className="sv-options">
               {['Every 1–3 months','Every 4–6 months','Once a year','Less than once a year','I don\'t currently have a specialist'].map(opt => (
-                <button key={opt} className={'sv-option' + (isSelected('q7',opt) ? ' sel' : '')} onClick={() => pickSingle('q7',opt)}>
+                <button key={opt} className={'sv-option' + (isSelected('q7', opt) ? ' sel' : '')} onClick={() => pickSingle('q7', opt)}>
                   <div className="sv-opt-dot" />{opt}
                 </button>
               ))}
@@ -389,7 +409,7 @@ export default function DiscoverySurvey() {
             <div>
               <div className="sv-scale-btns">
                 {['1','2','3','4','5'].map(n => (
-                  <button key={n} className={'sv-scale-btn' + (answers.q8 === n ? ' sel' : '')} onClick={() => pickSingle('q8',n)}>{n}</button>
+                  <button key={n} className={'sv-scale-btn' + (answers.q8 === n ? ' sel' : '')} onClick={() => pickSingle('q8', n)}>{n}</button>
                 ))}
               </div>
               <div className="sv-scale-labels"><span>Full control only</span><span>Happy to contribute</span></div>
