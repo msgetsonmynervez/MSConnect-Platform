@@ -1,94 +1,143 @@
-// /src/pages/Home.tsx (UPDATED for iPad Touch/Safari)
-import React from 'react';
+// /src/pages/Home.tsx (UPDATED: Fixing the broken CTA button)
+import React, { useState } from 'react'; // 1. Import useState for the modal
 import { useNarrator } from '../hooks/useNarrator'; 
+import { seedSymptomDatabase } from '../utils/seedIndexedDB'; 
+
+// ... (Rest of a11yStyles are unchanged)
 
 /**
- * IPAD-OPTIMIZED A11Y STYLES
- * - Wide touch targets (min-height: 48px)
- * - Safe Area insets for modern iPads
- * - Explicit Webkit definitions for Safari stability.
+ * Access Modal Styles (Peaceful A11y Design)
+ * - Focused on reducing sensory input.
+ * - Simple text, large touch targets, minimal visual noise.
  */
-const a11yStyles = {
-  container: {
-    backgroundColor: '#F9FAFB',
-    color: '#111827',
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif', // Optimized for Apple devices
-    padding: '3rem 2rem', // Increased padding for comfort
-    // iPad "Safe Area" padding for devices with Home indicators (e.g., iPad Pro)
-    paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))',
-    minHeight: '100vh',
+const modalStyles = {
+  overlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(17, 24, 39, 0.75)', // Dark Slate Gray, soft overlay
     display: 'flex',
-    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: '3rem',
-    // Smooth scrolling for iPadOS
-    WebkitOverflowScrolling: 'touch', 
+    zIndex: 1000,
   },
-  mainHeader: {
-    color: '#3C5A51',
-    fontSize: '3rem', // Massive header for clarity
-    fontWeight: '900',
-    borderBottom: '4px solid #D98C58', // Thicker underline for emphasis
-    paddingBottom: '1.5rem',
-    width: '100%',
-    maxWidth: '1200px',
-    textAlign: 'center',
-  },
-  featureGrid: {
-    display: 'grid',
-    // Force a 2-column layout on iPad (minmax 450px) to maximize touch target width.
-    gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
-    gap: '2.5rem',
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  featureCard: {
+  modal: {
     backgroundColor: 'white',
-    padding: '2.5rem', // Maximum padding for stable touch target
-    borderRadius: '20px',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-    border: '1px solid #E5E7EB',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1.5rem',
-    cursor: 'pointer',
-    // Clear visual feedback on TAPS (active state) on iPad
-    WebkitTapHighlightColor: 'rgba(217, 140, 88, 0.2)', // Subtile Terracotta highlight
+    padding: '3rem',
+    borderRadius: '24px',
+    maxWidth: '600px',
+    width: '90%',
+    textAlign: 'center' as const,
+    boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
   },
-  // (Rest of styles remain the same but use increased sizes/padding)
-  cardIcon: {
-    fontSize: '3.5rem',
-    color: '#D98C58',
-    marginBottom: '1rem',
+  title: {
+    color: '#3C5A51', // Sage Green
+    fontSize: '2.5rem',
+    fontWeight: '900',
+    margin: [0, 0, 1rem, 0], // Top, Right, Bottom, Left
   },
-  cardTitle: {
-    color: '#111827',
-    fontSize: '2rem',
-    fontWeight: '700',
-    margin: 0,
-  },
-  cardText: {
+  text: {
     color: '#374151', // Higher contrast
-    fontSize: '1.4rem', // Large body text for reading fatigue
+    fontSize: '1.4rem',
     lineHeight: '1.8',
-    margin: 0,
+    margin: [0, 0, 2rem, 0],
+    fontStyle: 'italic',
   },
-  callToActionButton: {
+  // HUGE, calming close button for tremors
+  closeButton: {
     backgroundColor: '#3C5A51',
     color: 'white',
-    padding: '1.8rem 4rem', // Big, stable button target
-    fontSize: '1.6rem',
-    fontWeight: '800',
+    padding: '1.5rem 3rem',
+    fontSize: '1.4rem',
+    fontWeight: '700',
     borderRadius: '16px',
     border: 'none',
     cursor: 'pointer',
+    marginTop: '2rem',
     width: '100%',
-    maxWidth: '500px',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-    // iPad Safe Area padding for fixed bottom placement if needed
-    marginBottom: 'env(safe-area-inset-bottom)',
+    maxWidth: '300px',
   },
 };
 
-// ... (Rest of the Home.tsx code for handleAccessibilityCardTap is unchanged)
+/**
+ * Home Component (Landing Page)
+ */
+const Home: React.FC = () => {
+  // 2. State for the Access Modal
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const { speakText, isSpeaking, stopSpeaking } = useNarrator();
+
+  // (handleAccessibilityCardTap function is unchanged)
+
+  /**
+   * FIX: Handle 'Get Early Access' Button Tap
+   */
+  const handleGetAccessTap = () => {
+    // 3. Open the Modal
+    setIsAccessModalOpen(true);
+    
+    // 4. Construction the Narrative Summary (Demonstration)
+    const narrativeText = "MS Connect is your on device neurology partner. We are strictly private and adaptive. In this special pre release, we show you how we assist with visual fatigue or tremors, directly on your iPad.";
+    
+    // 5. Speak the demonstration (Client-side, Zero-Knowledge)
+    speakText(narrativeText);
+  };
+
+  /**
+   * Handle Closing the Modal
+   */
+  const handleCloseModal = () => {
+    // 6. Stop speaking immediately on a tap
+    stopSpeaking(); 
+    setIsAccessModalOpen(false);
+  };
+
+  return (
+    <div style={a11yStyles.container}>
+      {/* (Brand Header and Founder Message unchanged) */}
+
+      {/* Feature Section */}
+      <div style={a11yStyles.featureGrid}>
+        {/* ... (First three feature cards unchanged) */}
+        
+        <FeatureCard 
+          icon="🩺" 
+          title="Doctor Reports" 
+          description="Click one button to generate a clean PDF summary of your trends, ready for your neurologist." 
+        />
+      </div>
+      
+      {/* ... (Developer Seeding Button unchanged, development only) */}
+
+      {/* 7. The Main CTA Button (Now linked to our handler) */}
+      <button 
+        style={a11yStyles.callToActionButton} 
+        onClick={handleGetAccessTap} // Attach the fixed handler
+      
+      >
+        {isSpeaking ? 'Demonstration Active...' : 'Get Early Access'}
+      </button>
+
+      {/* 8. The Access Modal (Demonstration Workflow) */}
+      {isAccessModalOpen && (
+        <div style={modalStyles.overlay} onClick={handleCloseModal}>
+          <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={modalStyles.title}>Welcome to MSConnect (Demo)</h2>
+            <p style={modalStyles.text}>
+              "MS Connect is designed and built by an individual living with Multiple Sclerosis. Our core promise is that your health data is private, secured directly on this iPad, and never leaves your control."
+            </p>
+            
+            {/* LARGE, clear button to close the modal and stop speech. */}
+            <button style={modalStyles.closeButton} onClick={handleCloseModal}>
+              Acknowledge Demonstration
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Home;
