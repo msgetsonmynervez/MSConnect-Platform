@@ -16,8 +16,8 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  // --- FIXED: Updated 'include' for Root Deployment ---
-  // The wildcard ensures tsc finds all source files in the root.
+  // --- FIXED: Consolidated 'include' for Root Deployment ---
+  // The wildcard ensures tsc finds all source files in the root (./**/*)
   "include": ["./**/*"], 
-  "exclude": ["node_modules", "dist"] // --- Exclude build output ---
+  "exclude": ["node_modules", "dist"]
 }
