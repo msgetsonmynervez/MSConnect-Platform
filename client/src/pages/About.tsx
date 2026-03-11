@@ -1,45 +1,44 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const About: React.FC = () => {
+  const navigate = useNavigate();
 
-  // Bypass React Router and force a hard navigation at the browser level
-  const forceNavigate = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.location.href = '/signin';
+  const handleBack = () => {
+    // Client-side routing: No server reload required.
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/signin');
+    }
   };
 
   const pageStyle: React.CSSProperties = {
     minHeight: '100vh',
     backgroundColor: '#FAF7F2',
-    paddingTop: '80px', // Pushed down to make room for the fixed button
+    paddingTop: '40px',
     paddingBottom: '80px',
     paddingLeft: '24px',
     paddingRight: '24px',
     fontFamily: 'system-ui, -apple-system, sans-serif'
   };
 
-  const nuclearButtonStyle: React.CSSProperties = {
-    position: 'fixed', // Escapes all container limitations
-    top: '20px',
-    left: '20px',
-    zIndex: 999999, // Absolute highest layer possible
-    display: 'flex',
+  const buttonStyle: React.CSSProperties = {
+    display: 'inline-flex',
     alignItems: 'center',
     backgroundColor: '#1C2B3A',
     color: '#FFFFFF',
-    borderStyle: 'none',
+    border: 'none',
     borderRadius: '50px',
     paddingTop: '16px',
     paddingBottom: '16px',
-    paddingLeft: '24px',
-    paddingRight: '24px',
+    paddingLeft: '28px',
+    paddingRight: '28px',
     fontSize: '16px',
     fontWeight: 'bold',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
     cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    touchAction: 'none' // Forces the browser to hand touch control to JavaScript immediately
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    marginBottom: '32px'
   };
 
   const cardStyle: React.CSSProperties = {
@@ -50,9 +49,7 @@ const About: React.FC = () => {
     paddingLeft: '24px',
     paddingRight: '24px',
     marginBottom: '20px',
-    borderStyle: 'solid',
-    borderWidth: '1px',
-    borderColor: '#E0E0E0',
+    border: '1px solid #E0E0E0',
     lineHeight: '1.6',
     color: '#1C2B3A'
   };
@@ -60,14 +57,8 @@ const About: React.FC = () => {
   return (
     <div style={pageStyle}>
       
-      {/* THE NUCLEAR BUTTON
-        Using onTouchStart ensures the second your finger touches the glass, it fires.
-      */}
-      <button 
-        style={nuclearButtonStyle}
-        onClick={forceNavigate}
-        onTouchStart={forceNavigate}
-      >
+      {/* The beautifully restored React Router button */}
+      <button onClick={handleBack} style={buttonStyle}>
         <svg 
           width="20" 
           height="20" 
@@ -79,13 +70,11 @@ const About: React.FC = () => {
           strokeLinejoin="round"
           style={{ marginRight: '8px' }}
         >
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        Home
+        Back
       </button>
 
-      {/* Main Content Area */}
       <div>
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', color: '#1C2B3A', marginBottom: '24px', marginTop: '0px' }}>
           Privacy & Safety
