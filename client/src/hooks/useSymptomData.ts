@@ -1,27 +1,31 @@
 // /hooks/useSymptomData.ts
 import { useState, useEffect, useCallback } from 'react';
-// 1. Import the IndexedDB storage service
 import { SymptomStorage, SymptomLogEntry } from '../services/SymptomStorage';
 
 /**
  * useSymptomData Hook
  * - Retrieves and processes raw symptom logs from iPad IndexedDB.
- * - Formats data specifically for the pdfMake Neurologist Summary.
- * - All processing is on-device (Zero-Knowledge).
+ * - Adheres to Zero-Knowledge Architecture (On-device processing).
  */
 export const useSymptomData = () => {
   const [rawLogs, setRawLogs] = useState<SymptomLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 1. Initialize 'error' with a strict Type.
+  // We can use 'string | null' but also define a custom type if needed.
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Load raw logs from IndexedDB (Self-contained function)
+   * Load raw logs from IndexedDB
+   * - NEW: Added robust error handling.
    */
   const loadLogs = useCallback(async () => {
     setIsLoading(true);
+    // 2. Clear any previous error on re-load
     setError(null);
     try {
-      // 2. Query the storage service (Runs locally on iPad Safari)
+      // 3. Query the storage service (Client-side only)
+      // This call will fail if IndexedDB initialization fails.
       const logs = await SymptomStorage.getAllLogEntries();
       
       // Sort logs by date (newest first for standard medical view)
@@ -29,8 +33,12 @@ export const useSymptomData = () => {
       
       setRawLogs(sortedLogs);
     } catch (err) {
-      console.error('Failed to load symptom logs:', err);
-      setError('Could not retrieve your local symptom history.');
+      // 4. --- SAFEGUARD: Handling unexpected failures ---
+      console.error('CRITICAL ERROR: Failed to load symptom logs (IndexedDB failure):', err);
+      
+      // Set a generic, user-friendly error message.
+      // A bad a11y experience is a white screen. A 'good' one is a helpful message.
+      setError('MSConnect encountered a critical on device data access error. Your private symptom logs cannot be loaded. Please ensure you have not blocked storage permissions for this app in iPad Safari settings.');
     } finally {
       setIsLoading(false);
     }
@@ -45,16 +53,20 @@ export const useSymptomData = () => {
 
   /**
    * Format Data for PDF Table (Process raw logs)
-   * - pdfMake expecting a specific structure (e.g., table body array).
-   * - MS sensory calibration: Use clean formatting, avoid tiny fonts.
+   * - Adheres to Zero-Knowledge Architecture (On-device processing).
    */
   const getFormattedSymptomTableData = useCallback(() => {
-    // 3. Return an empty array if no logs exist (Safe check)
-    if (rawLogs.length === 0) {
-      return [[ 'Date', 'Symptom', 'Severity (1-10)', 'Notes' ], ['No symptoms logged yet.', '', '', '']];
+    // 5. --- SAFEGUARD: Return empty if error or loading ---
+    // This is the most critical check for white screen prevention.
+    // If we try to process an empty array as data, it can cause a crash down the chain.
+    if (isLoading || error || rawLogs.length === 0) {
+      return [
+        [ { text: 'Date', style: 'tableHeader' }, { text: 'Symptom', style: 'tableHeader' }, { text: 'Severity (1-10)', style: 'tableHeader', alignment: 'center' }, { text: 'Notes', style: 'tableHeader' } ],
+        [ { text: isLoading ? 'Loading...' : error ? 'Error!' : 'No data.', colSpan: 4, style: 'body' }, {}, {}, {} ]
+      ];
     }
 
-    // Define the Table Headers (for pdfMake)
+    // (The mapping logic is unchanged)
     const headers = [
       { text: 'Date', style: 'tableHeader' },
       { text: 'Symptom', style: 'tableHeader' },
@@ -62,65 +74,37 @@ export const useSymptomData = () => {
       { text: 'Notes', style: 'tableHeader' },
     ];
 
-    // Map raw logs into pdfMake table body rows
     const bodyRows = rawLogs.map((log) => {
-      // Format the Date (e.g., Oct 26, 2023)
       const formattedDate = log.timestamp.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+        month: 'short', day: 'numeric', year: 'numeric',
       });
-
-      // Calibrate Severity Color (Optional MS optimization)
-      // We can use Terracotta (Warning) for severe (7+) logs.
       const severityStyle = log.severityScore >= 7 ? { color: '#D98C58', bold: true } : {};
 
-      // Return the row array (Order must match headers)
       return [
         { text: formattedDate, style: 'body' },
         { text: log.symptomType, style: 'body' },
         { text: log.severityScore.toString(), style: 'body', alignment: 'center', ...severityStyle },
-        { text: log.notes || '', style: 'body' }, // Handle missing notes
+        { text: log.notes || '', style: 'body' },
       ];
     });
 
-    // Final pdfMake table body (Headers + Data Rows)
     return [headers, ...bodyRows];
-  }, [rawLogs]);
+  }, [rawLogs, isLoading, error]); // Add dependencies
 
-  /**
-   * Get Summary Stats (E.g., for 'Stay Mindful' card)
-   */
+  // (getSummaryStats unchanged)
   const getSummaryStats = useCallback(() => {
     if (rawLogs.length === 0) return { totalLogs: 0, averageSeverity: 0, mostFrequent: 'N/A' };
-    
-    // Total number of logs
     const totalLogs = rawLogs.length;
-    
-    // Average Severity (Rounded to one decimal)
     const severitySum = rawLogs.reduce((sum, log) => sum + log.severityScore, 0);
     const averageSeverity = Math.round((severitySum / totalLogs) * 10) / 10;
-    
-    // Most Frequent Symptom Type
-    const symptomCounts = rawLogs.reduce((acc, log) => {
-      acc[log.symptomType] = (acc[log.symptomType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    // Find the max count (using simple logic)
+    const symptomCounts = rawLogs.reduce((acc, log) => { acc[log.symptomType] = (acc[log.symptomType] || 0) + 1; return acc; }, {} as Record<string, number>);
     let mostFrequent = 'N/A';
     let maxCount = 0;
-    for (const type in symptomCounts) {
-      if (symptomCounts[type] > maxCount) {
-        maxCount = symptomCounts[type];
-        mostFrequent = type;
-      }
-    }
-
+    for (const type in symptomCounts) { if (symptomCounts[type] > maxCount) { maxCount = symptomCounts[type]; mostFrequent = type; } }
     return { totalLogs, averageSeverity, mostFrequent };
   }, [rawLogs]);
 
-  // Return the hook's interface
+  // Return the hook's interface (Must match previous API)
   return { 
     rawLogs, 
     getFormattedSymptomTableData, 
