@@ -1,10 +1,11 @@
+// /src/pages/Home.tsx
 import React from 'react';
+// 1. Import the Hook we just created
+import { useNarrator } from '../hooks/useNarrator'; 
 
 /**
  * Common Styles for High Accessibility (A11y)
- * - Large font sizes for visual fatigue (Optic Neuritis)
- * - Calming colors (Sage Green/Terracotta) against soft gray
- * - Ample padding for clear touch targets (for tremors)
+ * - Defined as a JS object for rapid "Adaptive UI" changes.
  */
 const a11yStyles = {
   container: {
@@ -46,7 +47,7 @@ const a11yStyles = {
     flexDirection: 'column',
     gap: '1rem',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    cursor: 'pointer',
+    cursor: 'pointer', // Large touch target visual cue
   },
   cardIcon: {
     fontSize: '2.5rem',
@@ -84,15 +85,18 @@ const a11yStyles = {
 
 /**
  * FeatureCard Component (Internal)
+ * - Accepts an 'onTap' prop to trigger the narrator.
  */
 interface FeatureCardProps {
   icon: string;
   title: string;
   description: string;
+  onTap?: () => void; // Optional function
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div style={a11yStyles.featureCard}>
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, onTap }) => (
+  // 2. Attach the onTap (speakText) function to the card's onClick handler
+  <div style={a11yStyles.featureCard} onClick={onTap}>
     <div style={a11yStyles.cardIcon}>{icon}</div>
     <h3 style={a11yStyles.cardTitle}>{title}</h3>
     <p style={a11yStyles.cardText}>{description}</p>
@@ -103,6 +107,20 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
  * Home Component (Landing Page)
  */
 const Home: React.FC = () => {
+  // 3. Initialize the useNarrator hook
+  const { speakText, isSpeaking } = useNarrator();
+
+  /**
+   * Handle Tapping the "Designed for Bad Days" Card
+   */
+  const handleAccessibilityCardTap = () => {
+    // 4. Construct the summary text we want to read aloud.
+    const narrativeText = "MS Connect is designed for your bad days. On days with visual fatigue, this feature provides voice assisted controls that adapt to you.";
+    
+    // 5. Speak the text (This uses the native device engine, keeping it private)
+    speakText(narrativeText);
+  };
+
   return (
     <div style={a11yStyles.container}>
       {/* Brand Header */}
@@ -116,18 +134,22 @@ const Home: React.FC = () => {
         </p>
       </section>
 
-      {/* Feature Section */}
+      {/* Feature Section - Simple and Direct */}
       <div style={a11yStyles.featureGrid}>
         <FeatureCard 
           icon="🛡️" 
           title="Privacy First" 
           description="Your health notes stay on your device. Zero-Knowledge architecture ensures we never see your data." 
         />
+        
+        {/* 6. Link this card to the handleAccessibilityCardTap function */}
         <FeatureCard 
           icon="👓" 
           title="Designed for Bad Days" 
           description="Large touch targets, reduced motion, and voice-assisted controls that adapt to you." 
+          onTap={handleAccessibilityCardTap} // Call the speak function
         />
+        
         <FeatureCard 
           icon="🧠" 
           title="Stay Mindful" 
@@ -141,7 +163,10 @@ const Home: React.FC = () => {
       </div>
 
       {/* Call to Action Button */}
-      <button style={a11yStyles.callToActionButton}>Get Early Access</button>
+      <button style={a11yStyles.callToActionButton}>
+        {/* Optional: Add a subtle visual state change if speaking */}
+        {isSpeaking ? 'Narrator Active...' : 'Get Early Access'}
+      </button>
     </div>
   );
 };
