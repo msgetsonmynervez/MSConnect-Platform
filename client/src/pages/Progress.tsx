@@ -32,6 +32,9 @@ export default function Progress() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  
+  // Data Narrator State
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -59,7 +62,55 @@ export default function Progress() {
       setLoading(false)
     }
     load()
+
+    // Cleanup: Stop talking if the user navigates away from the Progress page
+    return () => {
+      window.speechSynthesis.cancel();
+    }
   }, [navigate])
+
+  // --- LOCAL DATA NARRATOR ENGINE ---
+  const toggleNarrator = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const recent7 = [...checkins].reverse().slice(0, 7);
+    if (recent7.length === 0) {
+      speak("You don't have any check-ins yet. Start tracking to hear your weekly summary.");
+      return;
+    }
+
+    // Calculate 7-day averages for the audio brief
+    const avgE = (recent7.reduce((s, c) => s + c.energy_level, 0) / recent7.length).toFixed(1);
+    const avgM = (recent7.reduce((s, c) => s + c.mood_score, 0) / recent7.length).toFixed(1);
+    const good = recent7.filter(c => c.day_tag === 'good').length;
+    const hard = recent7.filter(c => c.day_tag === 'hard').length;
+
+    let text = `Here is your summary for the last ${recent7.length} check-ins. `;
+    text += `Your average energy was ${avgE}, and your average mood was ${avgM}. `;
+    if (good > 0) text += `You recorded ${good} good ${good === 1 ? 'day' : 'days'}. `;
+    if (hard > 0) text += `You recorded ${hard} hard ${hard === 1 ? 'day' : 'days'}. `;
+    text += "Thank you for tracking. You are doing a great job.";
+
+    speak(text);
+  };
+
+  const speak = (text: string) => {
+    window.speechSynthesis.cancel(); // Clear any queued speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Slow the rate slightly for better cognitive accessibility (Brain Fog buffer)
+    utterance.rate = 0.9; 
+    
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   async function generateReport() {
     if (!userProfile) return
@@ -140,38 +191,84 @@ export default function Progress() {
 
   if (fogMode) {
     return (
-      <div style={{ minHeight: '100vh', background: '#1C2B3A' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#1C2B3A' }}>
         <FogView
           title="Your progress"
-          primaryLabel="View check-in history 📊"
-          onPrimary={() => {}}
+          primaryLabel={isSpeaking ? "Stop audio 🛑" : "Listen to summary 🔊"}
+          onPrimary={toggleNarrator}
         />
         <BottomNav />
       </div>
     )
   }
 
+  // Common Action Button Style for iPad (Split padding)
+  const actionButtonStyle: React.CSSProperties = {
+    borderStyle: 'none',
+    borderRadius: '50px', 
+    paddingTop: '10px',
+    paddingBottom: '10px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    fontSize: '13px', 
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  };
+
   return (
-    <div style={{ minHeight: '100vh', background: '#1C2B3A', paddingBottom: '80px' }}>
-      <div style={{ padding: '48px 20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: 600, color: '#FAF7F2', marginBottom: '4px' }}>Progress</div>
-          <div style={{ fontSize: '14px', color: '#8FAF9F' }}>Your last 30 days</div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#1C2B3A', paddingBottom: '80px' }}>
+      <div style={{ paddingTop: '48px', paddingBottom: '24px', paddingLeft: '20px', paddingRight: '20px' }}>
+        <div style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 600, color: '#FAF7F2', marginBottom: '16px' }}>Progress</div>
+        
+        {/* Action Buttons Row */}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          
+          {/* Audio Narrator Button */}
+          <button 
+            onClick={toggleNarrator} 
+            style={{
+              ...actionButtonStyle,
+              backgroundColor: isSpeaking ? '#C4714A' : '#8FAF9F', 
+              color: '#1C2B3A',
+            }}
+          >
+            {isSpeaking ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                Stop Briefing
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                Listen to Summary
+              </>
+            )}
+          </button>
+
+          {/* Export Button */}
+          <button 
+            onClick={generateReport} 
+            disabled={exporting || checkins.length === 0} 
+            style={{
+              ...actionButtonStyle,
+              backgroundColor: exporting ? '#2E4057' : '#5C7A6B', 
+              color: '#FAF7F2', 
+              opacity: checkins.length === 0 ? 0.5 : 1
+            }}
+          >
+            {exporting ? 'Generating...' : '📄 Export PDF'}
+          </button>
         </div>
-        <button onClick={generateReport} disabled={exporting || checkins.length === 0} style={{
-          background: exporting ? '#2E4057' : '#5C7A6B', color: '#FAF7F2', border: 'none',
-          borderRadius: '50px', padding: '10px 18px', fontSize: '13px', fontWeight: 500,
-          cursor: checkins.length === 0 ? 'not-allowed' : 'pointer',
-          opacity: checkins.length === 0 ? 0.5 : 1, transition: 'all 0.2s'
-        }}>
-          {exporting ? 'Generating...' : '📄 Export for Doctor'}
-        </button>
       </div>
 
-      {loading && <div style={{ textAlign: 'center', color: '#8FAF9F', padding: '40px' }}>Loading...</div>}
+      {loading && <div style={{ textAlign: 'center', color: '#8FAF9F', paddingTop: '40px', paddingBottom: '40px' }}>Loading...</div>}
 
       {!loading && (
-        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', gap: '12px' }}>
             {[
               { label: 'Avg Energy', value: avgEnergy, emoji: '⚡' },
@@ -179,17 +276,17 @@ export default function Progress() {
               { label: 'Good Days', value: goodDays, emoji: '🌿' },
               { label: 'Hard Days', value: hardDays, emoji: '💙' },
             ].map(stat => (
-              <div key={stat.label} style={{ flex: 1, background: '#FAF7F2', borderRadius: '16px', padding: '14px 8px', textAlign: 'center' }}>
+              <div key={stat.label} style={{ flex: 1, backgroundColor: '#FAF7F2', borderRadius: '16px', paddingTop: '14px', paddingBottom: '14px', paddingLeft: '8px', paddingRight: '8px', textAlign: 'center' }}>
                 <div style={{ fontSize: '18px', marginBottom: '4px' }}>{stat.emoji}</div>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: '#1C2B3A' }}>{stat.value}</div>
                 <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px', lineHeight: 1.3 }}>{stat.label}</div>
               </div>
             ))}
           </div>
-          <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
+          <div style={{ backgroundColor: '#FAF7F2', borderRadius: '20px', paddingTop: '20px', paddingBottom: '20px', paddingLeft: '20px', paddingRight: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>Energy & Mood — 30 Days</div>
             {checkins.length < 2 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ textAlign: 'center', paddingTop: '32px', paddingBottom: '32px' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px' }}>📊</div>
                 <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.6 }}>Check in daily to see your trends appear here.</p>
               </div>
@@ -207,14 +304,14 @@ export default function Progress() {
               </ResponsiveContainer>
             )}
           </div>
-          <div style={{ background: '#FAF7F2', borderRadius: '20px', padding: '20px' }}>
+          <div style={{ backgroundColor: '#FAF7F2', borderRadius: '20px', paddingTop: '20px', paddingBottom: '20px', paddingLeft: '20px', paddingRight: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600, color: '#1C2B3A', marginBottom: '16px' }}>Recent Check-ins</div>
             {checkins.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', padding: '16px 0' }}>No check-ins yet. Start your first one today.</p>
+              <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', paddingTop: '16px', paddingBottom: '16px' }}>No check-ins yet. Start your first one today.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[...checkins].reverse().slice(0, 7).map(c => (
-                  <div key={c.checkin_date} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F0EDE8' }}>
+                  <div key={c.checkin_date} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', paddingBottom: '10px', borderBottom: '1px solid #F0EDE8' }}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 500, color: '#1C2B3A' }}>
                         {new Date(c.checkin_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
