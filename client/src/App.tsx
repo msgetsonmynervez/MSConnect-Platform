@@ -18,6 +18,9 @@ import TapTarget from './pages/games/TapTarget'
 import DiscoverySurvey from './pages/DiscoverySurvey'
 import AuthConfirm from './pages/AuthConfirm'
 import NotFound from './pages/not-found'
+// New Imports for Privacy and Safety
+import About from './pages/About' 
+import EmergencyResources from './components/EmergencyResources'
 
 export default function App() {
   return (
@@ -42,7 +45,11 @@ export default function App() {
           <Route path="/games/tap-target" element={<TapTarget />} />
           <Route path="/survey" element={<DiscoverySurvey />} />
           <Route path="/auth/confirm" element={<AuthConfirm />} />
-          <Route path="/about" element={<NotFound />} />
+          
+          {/* Updated Routes for Legal & Safety */}
+          <Route path="/about" element={<About />} />
+          <Route path="/resources" element={<EmergencyResources />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </EnergyProvider>
