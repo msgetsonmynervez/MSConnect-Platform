@@ -12,15 +12,18 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
+    "d3-scale": "^4.0.2", // --- FIXED: Added dependency for Recharts ---
     "html2canvas": "^1.4.1",
-    "pdfmake": "^0.2.11",
+    "pdfmake": "^0.2.11", // --- FIXED: Target Security Patch ---
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.0",
     "react-router-dom": "^6.22.1",
+    "recharts": "^2.10.3", // --- FIXED: Added charting library for Progress ---
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/d3-scale": "^4.0.8", // --- FIXED: Added types for Recharts peer ---
     "@types/pdfmake": "^0.2.8",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
