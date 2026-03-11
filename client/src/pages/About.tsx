@@ -47,9 +47,20 @@ const About: React.FC = () => {
 
   return (
     <div style={pageStyle}>
-      <button style={buttonStyle} onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      // 1. Update the button at the top of your return statement
+<button 
+  style={buttonStyle} 
+  onClick={() => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/home'); // Fallback if they opened the link in a new tab
+    }
+  }}
+>
+  ← Back
+</button>
+
 
       <h1 style={{ fontSize: '28px', marginBottom: '24px', fontFamily: 'Georgia, serif' }}>
         Privacy & Safety
