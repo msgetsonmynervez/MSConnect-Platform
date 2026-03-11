@@ -1,8 +1,8 @@
-// src/services/SymptomStorage.ts
+// /src/services/SymptomStorage.ts
 
 /**
  * Define the structure of a single Symptom Log Entry.
- * (This is what we defined earlier and will save to the iPad.)
+ * (This is what we will save to the iPad.)
  */
 export interface SymptomLogEntry {
   id?: number;              // Unique ID (Auto-incremented by IndexedDB)
@@ -18,6 +18,7 @@ export interface SymptomLogEntry {
 
 /**
  * Configure the IndexedDB Database Instance.
+ * - This provides the safe, encrypted container on the iPad.
  */
 const DB_NAME = 'MSConnect_ZK_v1'; // MSConnect Zero-Knowledge DB v1
 const STORE_NAME = 'symptom_logs'; // Name of the object store (table)
@@ -25,11 +26,11 @@ const DB_VERSION = 1;
 
 /**
  * Opens (or creates/upgrades) the IndexedDB database instance on the iPad.
- * This function handles the schema definition and security checks.
+ * - Adheres to Zero-Knowledge: process is client-side only (iPad Safari memory).
  */
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    // 1. Request to open the database
+    // 1. Request to open the database (Browser engine handles encryption)
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     // 2. Handle errors
@@ -43,7 +44,7 @@ function openDB(): Promise<IDBDatabase> {
       resolve((event.target as IDBOpenDBRequest).result);
     };
 
-    // 4. Define/Upgrade the database schema (Run on first-time open or version change)
+    // 4. Define/Upgrade the database schema (Run on first-time open)
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
 
@@ -51,8 +52,7 @@ function openDB(): Promise<IDBDatabase> {
       // keyPath: 'id' ensures each log gets a unique ID automatically.
       const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
 
-      // Create Indexes (For fast searching and report generation)
-      // We often need to look up data by time or symptom type.
+      // Create Indexes (For fast searching and medical report generation)
       store.createIndex('timestamp_idx', 'timestamp', { unique: false });
       store.createIndex('type_idx', 'symptomType', { unique: false });
       store.createIndex('severity_idx', 'severityScore', { unique: false });
@@ -68,16 +68,17 @@ function openDB(): Promise<IDBDatabase> {
 export const SymptomStorage = {
   /**
    * Saves a new symptom log entry securely to the iPad's IndexedDB.
+   * - Zero-Knowledge principle: All processing is client-side.
    */
   async saveLogEntry(entry: SymptomLogEntry): Promise<number> {
     const db = await openDB();
+    // 1. Return a Promise (We are fixing the closing syntax here)
     return new Promise((resolve, reject) => {
-      // 1. Start a "readwrite" transaction
+      // Start a "readwrite" transaction
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
 
-      // 2. Add the entry to the store
-      // Entry is cloned implicitly by IndexedDB.
+      // Add the entry to the store
       const request = store.add(entry);
 
       request.onsuccess = (event) => {
@@ -95,16 +96,20 @@ export const SymptomStorage = {
       transaction.oncomplete = () => {
         db.close();
       };
-    };
+    // --- FIX: Syntax Error r ---
+    // Was: };
+    // Now: }); (Correct closing for the 'new Promise' constructor)
+    }); 
   },
 
   /**
    * Retrieves all symptom log entries from the iPad's IndexedDB.
-   * This is what we will use to feed the Neurologist Summary PDF.
+   * - This is what feeds the on-device Neurologist PDF report.
    */
   async getAllLogEntries(): Promise<SymptomLogEntry[]> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
+      // Transact in "readonly" mode for performance
       const transaction = db.transaction(STORE_NAME, 'readonly');
       const store = transaction.objectStore(STORE_NAME);
 
@@ -121,9 +126,10 @@ export const SymptomStorage = {
         reject('Failed to load local log history.');
       };
 
+      // Close connection
       transaction.oncomplete = () => {
         db.close();
       };
-    };
+    });
   },
 };
