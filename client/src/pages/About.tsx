@@ -1,37 +1,45 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 const About: React.FC = () => {
 
+  // Bypass React Router and force a hard navigation at the browser level
+  const forceNavigate = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = '/signin';
+  };
+
   const pageStyle: React.CSSProperties = {
-    position: 'relative',
     minHeight: '100vh',
     backgroundColor: '#FAF7F2',
-    paddingTop: '40px',
+    paddingTop: '80px', // Pushed down to make room for the fixed button
     paddingBottom: '80px',
     paddingLeft: '24px',
     paddingRight: '24px',
-    overflowX: 'hidden',
     fontFamily: 'system-ui, -apple-system, sans-serif'
   };
 
-  const homeButtonStyle: React.CSSProperties = {
-    display: 'inline-flex',
+  const nuclearButtonStyle: React.CSSProperties = {
+    position: 'fixed', // Escapes all container limitations
+    top: '20px',
+    left: '20px',
+    zIndex: 999999, // Absolute highest layer possible
+    display: 'flex',
     alignItems: 'center',
     backgroundColor: '#1C2B3A',
     color: '#FFFFFF',
-    textDecoration: 'none',
+    borderStyle: 'none',
     borderRadius: '50px',
     paddingTop: '16px',
     paddingBottom: '16px',
-    paddingLeft: '28px',
-    paddingRight: '28px',
+    paddingLeft: '24px',
+    paddingRight: '24px',
     fontSize: '16px',
     fontWeight: 'bold',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
-    position: 'relative',
-    zIndex: 9999
+    touchAction: 'none' // Forces the browser to hand touch control to JavaScript immediately
   };
 
   const cardStyle: React.CSSProperties = {
@@ -46,37 +54,39 @@ const About: React.FC = () => {
     borderWidth: '1px',
     borderColor: '#E0E0E0',
     lineHeight: '1.6',
-    color: '#1C2B3A',
-    position: 'relative',
-    zIndex: 10
+    color: '#1C2B3A'
   };
 
   return (
     <div style={pageStyle}>
       
-      {/* THE NEW HOME BUTTON */}
-      <div style={{ marginBottom: '32px' }}>
-        <Link to="/home" style={homeButtonStyle}>
-          <svg 
-            width="20" 
-            height="20" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-            style={{ marginRight: '8px' }}
-          >
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-          Home
-        </Link>
-      </div>
+      {/* THE NUCLEAR BUTTON
+        Using onTouchStart ensures the second your finger touches the glass, it fires.
+      */}
+      <button 
+        style={nuclearButtonStyle}
+        onClick={forceNavigate}
+        onTouchStart={forceNavigate}
+      >
+        <svg 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+          style={{ marginRight: '8px' }}
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        Home
+      </button>
 
       {/* Main Content Area */}
-      <div style={{ position: 'relative', zIndex: 10 }}>
+      <div>
         <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', color: '#1C2B3A', marginBottom: '24px', marginTop: '0px' }}>
           Privacy & Safety
         </h1>
@@ -95,21 +105,6 @@ const About: React.FC = () => {
           </p>
         </section>
       </div>
-
-      {/* Background Decoratives - Ghosted out so they never block touches */}
-      <div style={{ 
-        position: 'absolute', top: '-50px', right: '-50px', 
-        width: '300px', height: '300px', borderRadius: '50%', 
-        backgroundColor: 'rgba(92,122,107,0.08)', zIndex: 1,
-        pointerEvents: 'none' 
-      }} />
-      
-      <div style={{ 
-        position: 'absolute', bottom: '0px', left: '-50px', 
-        width: '250px', height: '250px', borderRadius: '50%', 
-        backgroundColor: 'rgba(196,113,74,0.05)', zIndex: 1,
-        pointerEvents: 'none' 
-      }} />
 
     </div>
   );
