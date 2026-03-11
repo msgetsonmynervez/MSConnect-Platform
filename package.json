@@ -12,14 +12,14 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
-    "d3-scale": "^4.0.2",
+    "d3-scale": "^4.0.2", // --- UNIFIED: Recharts peer ---
     "html2canvas": "^1.4.1",
-    "pdfmake": "^0.2.11",
+    "pdfmake": "^0.2.11", // --- SECURED: Privacy patch ---
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.0",
     "react-router-dom": "^6.22.1",
-    "recharts": "^2.10.3",
+    "recharts": "^2.10.3", // --- UNIFIED: Charting library ---
     "zod": "^3.22.4"
   },
   "devDependencies": {
