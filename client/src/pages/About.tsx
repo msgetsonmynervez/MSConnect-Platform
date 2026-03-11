@@ -1,19 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const About: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleBack = () => {
-    // If we're in a PWA/Standalone mode, history.length is often 1.
-    // This ensures the button ALWAYS works.
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/signin');
-    }
-  };
-
   return (
     <div style={{
       position: 'relative',
@@ -26,18 +14,17 @@ const About: React.FC = () => {
       overflowX: 'hidden'
     }}>
       
-      {/* THE FIX: A dedicated, high-z-index top bar for the button */}
-      <div style={{
-        position: 'relative',
-        zIndex: 100, // Higher than any decorative circles
-        marginBottom: '32px'
-      }}>
-        <button 
-          onClick={handleBack}
+      {/* THE FIX: Replaced <button> with <Link>. 
+          Safari natively prioritizes touch events on anchor tags over buttons. */}
+      <div style={{ position: 'relative', zIndex: 9999, marginBottom: '32px' }}>
+        <Link 
+          to="/signin" 
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
             backgroundColor: '#1C2B3A',
             color: '#FFFFFF',
-            border: 'none',
+            textDecoration: 'none', // Prevents the default link underline
             borderRadius: '50px',
             paddingTop: '16px',
             paddingBottom: '16px',
@@ -45,37 +32,36 @@ const About: React.FC = () => {
             paddingRight: '32px',
             fontSize: '16px',
             fontWeight: 'bold',
-            cursor: 'pointer',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            // iPad Safari Touch Fixes
-            WebkitAppearance: 'none',
-            touchAction: 'manipulation'
+            WebkitTapHighlightColor: 'transparent'
           }}
         >
-          ← Back
-        </button>
+          <span style={{ marginRight: '8px' }}>←</span> Back
+        </Link>
       </div>
 
       {/* Main Content Area */}
       <div style={{ position: 'relative', zIndex: 10 }}>
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', color: '#1C2B3A', marginBottom: '24px', marginTop: '0' }}>
           Privacy & Safety
         </h1>
 
         <section style={cardStyle}>
-          <h2 style={{ color: '#DC2626', fontSize: '20px', marginTop: '0' }}>Medical Disclaimer</h2>
-          <p>MSConnect is a tracking tool, not a medical provider. We do not provide medical advice or diagnosis.</p>
+          <h2 style={{ color: '#DC2626', fontSize: '20px', marginTop: '0', marginBottom: '12px' }}>Medical Disclaimer</h2>
+          <p style={{ margin: '0' }}>
+            MSConnect is a tracking tool, not a medical provider. We do not provide medical advice or diagnosis. Always consult your physician.
+          </p>
         </section>
 
         <section style={cardStyle}>
-          <h2 style={{ color: '#5C7A6B', fontSize: '20px', marginTop: '0' }}>Your Data</h2>
-          <p>We use Zero-Knowledge architecture. Your survey responses are encrypted and processed locally on this iPad.</p>
+          <h2 style={{ color: '#5C7A6B', fontSize: '20px', marginTop: '0', marginBottom: '12px' }}>Your Data</h2>
+          <p style={{ margin: '0' }}>
+            We use Zero-Knowledge architecture. Your survey responses are encrypted and processed locally on your device.
+          </p>
         </section>
       </div>
 
-      {/* THE FIX FOR SCENARIO A: 
-          Adding 'pointerEvents: none' to these background circles.
-          This makes them "ghosts" so clicks pass right through them. */}
+      {/* Background Decoratives - Ghosted out */}
       <div style={{ 
         position: 'absolute', top: '-50px', right: '-50px', 
         width: '300px', height: '300px', borderRadius: '50%', 
@@ -103,7 +89,8 @@ const cardStyle: React.CSSProperties = {
   paddingRight: '24px',
   marginBottom: '20px',
   border: '1px solid #E0E0E0',
-  lineHeight: '1.6'
+  lineHeight: '1.6',
+  color: '#1C2B3A'
 };
 
 export default About;
