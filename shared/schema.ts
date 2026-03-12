@@ -1,12 +1,15 @@
-import { pgTable, text, serial } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+export interface User {
+  id: number;
+  username: string;
+}
 
-export const dummyTable = pgTable("dummy", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-});
+export interface Symptom {
+  id: number;
+  name: string;
+  intensity: number;
+  notes?: string;
+  timestamp: string;
+}
 
-export const insertDummySchema = createInsertSchema(dummyTable);
-export type Dummy = typeof dummyTable.$inferSelect;
-export type InsertDummy = z.infer<typeof insertDummySchema>;
+export type InsertUser = Omit<User, "id">;
+export type InsertSymptom = Omit<Symptom, "id" | "timestamp">;
