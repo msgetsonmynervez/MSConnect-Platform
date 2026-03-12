@@ -1,58 +1,29 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { EnergyProvider } from './context/EnergyContext'
-import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import ForgotPassword from './pages/ForgotPassword'
-import Onboarding from './pages/Onboarding'
-import Home from './pages/Home'
-import DailyCheckIn from './pages/DailyCheckIn'
-import Train from './pages/Train'
-import Community from './pages/Community'
-import Progress from './pages/Progress'
-import Journal from './pages/Journal'
-import Goals from './pages/Goals'
-import RestroomFinder from './pages/RestroomFinder'
-import NewsHub from './pages/NewsHub'
-import MemoryMatch from './pages/games/MemoryMatch'
-import TapTarget from './pages/games/TapTarget'
-import DiscoverySurvey from './pages/DiscoverySurvey'
-import AuthConfirm from './pages/AuthConfirm'
-import NotFound from './pages/not-found'
-// New Imports for Privacy and Safety
-import About from './pages/About' 
-import EmergencyResources from './components/EmergencyResources'
+import { Switch, Route } from "wouter";
+// We are intentionally ONLY importing the clean, local-storage pages.
+// Cloud-dependent pages are disconnected until they are rewritten for Zero-Knowledge.
+import Home from "./pages/Home";
+import Progress from "./pages/Progress";
 
-export default function App() {
+function App() {
   return (
-    <BrowserRouter>
-      <EnergyProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/signin" replace />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/checkin" element={<DailyCheckIn />} />
-          <Route path="/train" element={<Train />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/journal" element={<Journal />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/restroom" element={<RestroomFinder />} />
-          <Route path="/news" element={<NewsHub />} />
-          <Route path="/games/memory-match" element={<MemoryMatch />} />
-          <Route path="/games/tap-target" element={<TapTarget />} />
-          <Route path="/survey" element={<DiscoverySurvey />} />
-          <Route path="/auth/confirm" element={<AuthConfirm />} />
-          
-          {/* Updated Routes for Legal & Safety */}
-          <Route path="/about" element={<About />} />
-          <Route path="/resources" element={<EmergencyResources />} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </EnergyProvider>
-    </BrowserRouter>
-  )
+    <div style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/progress" component={Progress} />
+        <Route>
+          <div style={{ padding: '4rem', textAlign: 'center' }}>
+            <h1 style={{ color: '#3C5A51', fontSize: '2rem' }}>Page Under Construction</h1>
+            <p style={{ fontSize: '1.2rem', marginTop: '1rem' }}>
+              This feature is being updated to support secure, on-device Zero-Knowledge storage.
+            </p>
+            <a href="/" style={{ display: 'inline-block', marginTop: '2rem', padding: '1rem 2rem', backgroundColor: '#3C5A51', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+              Return Home
+            </a>
+          </div>
+        </Route>
+      </Switch>
+    </div>
+  );
 }
+
+export default App;
